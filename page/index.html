@@ -42,6 +42,9 @@
         --z-offset: -0.5em;
         animation: 5s linear infinite running prismify-rotate;
       }
+      .spinning-icon:last-child > * {
+        animation-direction: reverse;
+      }
       @media (prefers-reduced-motion) {
         .spinning-icon > * {
           animation: none;
