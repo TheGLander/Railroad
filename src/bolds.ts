@@ -2,18 +2,18 @@ import { JSDOM } from "jsdom"
 
 // We're mocking the bb.club API for easy substitution
 
-export interface ApiPackLevel {
+interface ApiPackLevel {
   level_attribs: ApiPackLevelAttribute[]
 }
 
-export interface ApiPackLevelAttribute {
+interface ApiPackLevelAttribute {
   rule_type: string
   metric: string
   attribs: ApiPackLevelAttributeAttribs
 }
 
 // Great name, I know
-export interface ApiPackLevelAttributeAttribs {
+interface ApiPackLevelAttributeAttribs {
   highest_reported: number
   highest_confirmed: number
 }
