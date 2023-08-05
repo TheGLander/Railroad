@@ -8,10 +8,6 @@ import "express-async-errors"
 const app = express()
 app.use(cors())
 
-app.get("/railroad", (_req, res) => {
-  res.send("Hello!")
-})
-
 app.get(
   "/railroad/bolds/:pack/",
   async (req: Request<{ pack: string }>, res) => {
@@ -27,6 +23,8 @@ app.get(
     res.send(JSON.stringify(bolds, (_k, v) => v, 2))
   }
 )
+
+app.use("/railroad", express.static("./page"))
 
 app.use(((err, _req, res, _next) => {
   if (!isBoom(err)) {

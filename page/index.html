@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Railroad</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/prismify@1.0.0/prismify.css"
+    />
+    <link rel="icon" href="icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body {
+        --bg-overlay-color: #0008;
+        background: linear-gradient(
+            var(--bg-overlay-color),
+            var(--bg-overlay-color)
+          ),
+          url(background.png);
+        color: whitesmoke;
+        font-family: sans-serif;
+        margin: 1em;
+      }
+      .title-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: row;
+        padding: 0.5em;
+      }
+      a {
+        color: whitesmoke;
+      }
+      h1 {
+        margin-inline: 1em;
+      }
+      .spinning-icon {
+        display: inline-block;
+      }
+      .spinning-icon > * {
+        --x-rotate-amount: 180deg;
+        --y-rotate-amount: 0deg;
+        --z-offset: -0.5em;
+        animation: 5s linear infinite running prismify-rotate;
+      }
+      @media (prefers-reduced-motion) {
+        .spinning-icon > * {
+          animation: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="title-container">
+      <div class="prismify spinning-icon"><img src="icon.png" /></div>
+      <h1>Railroad</h1>
+      <div class="prismify spinning-icon"><img src="icon.png" /></div>
+    </div>
+    <p>
+      <b>R</b>ail<b>R</b>oad is a <b>R</b>oute <b>R</b>epository for routes
+      meant for the Steam/CC2 ruleset. This is the CC2 version of the
+      <a href="https://davidstolp.com/old/chips/tws">public TWS</a>, which is a
+      repository for MS and Lynx routes.
+    </p>
+    <p>
+      The prime way of interacting with Railroad is with
+      <a href="https://glander.club/notcc">NotCC</a>, which will have native
+      support for Railroad in the near future.
+    </p>
+    <script type="module">
+      import { prismifyOnPage } from "https://unpkg.com/prismify@1.0.0/prismify.js"
+      prismifyOnPage()
+    </script>
+  </body>
+</html>
