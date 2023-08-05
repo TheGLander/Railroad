@@ -2,8 +2,16 @@ import express, { Request, ErrorRequestHandler } from "express"
 import { notFound, isBoom, badImplementation } from "@hapi/boom"
 import { getPackBestMetrics as getPackBolds } from "./bolds.js"
 import cors from "cors"
-
+import * as dotenv from "dotenv"
 import "express-async-errors"
+import { connect, model } from "mongoose"
+import { userSchema } from "./schemata.js"
+
+dotenv.config()
+
+await connect(process.env.MONGODB_LINK!)
+
+const User = model("User", userSchema)
 
 const app = express()
 app.use(cors())
@@ -26,6 +34,7 @@ app.get(
 
 app.use("/railroad", express.static("./page"))
 
+// Error handling
 app.use(((err, _req, res, _next) => {
   if (!isBoom(err)) {
     console.error(err)
