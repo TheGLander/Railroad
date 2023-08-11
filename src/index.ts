@@ -6,6 +6,7 @@ import * as dotenv from "dotenv"
 import "express-async-errors"
 import { connect, model } from "mongoose"
 import { userSchema } from "./schemata.js"
+import { updateLevelModel } from "./levels.js"
 
 dotenv.config()
 
@@ -50,3 +51,5 @@ const port = 4943
 app.listen(port, () => {
   console.log(`Listening on http://localhost:${port}`)
 })
+
+await updateLevelModel()
