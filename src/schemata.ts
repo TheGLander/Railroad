@@ -41,6 +41,6 @@ export const levelSchema = new Schema({
   levelN: Number,
   boldTime: Number,
   boldScore: Number,
-})
+}).index({ setName: 1, levelN: 1 })
 
 export type Level = InferSchemaType<typeof levelSchema>
