@@ -6,6 +6,7 @@ import "express-async-errors"
 import { connect } from "mongoose"
 import { router as levelRouter, updateLevelModel } from "./levels.js"
 import { router as boldRouter } from "./bolds.js"
+import { router as userRouter } from "./users.js"
 
 dotenv.config()
 
@@ -16,6 +17,7 @@ const app = express()
 
 app.use("/railroad", cors(), boldRouter)
 app.use("/railroad", cors(), levelRouter)
+app.use("/railroad", userRouter)
 
 app.use("/railroad", express.static("./page"))
 
