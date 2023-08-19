@@ -1,4 +1,4 @@
-import { InferSchemaType, Schema, Types } from "mongoose"
+import { HydratedDocument, InferSchemaType, Schema, Types } from "mongoose"
 
 function ref(refModel: string) {
   return { type: Types.ObjectId, ref: refModel }
@@ -10,7 +10,7 @@ export const userSchema = new Schema({
   admin: Boolean,
 })
 
-export type User = InferSchemaType<typeof userSchema>
+export type UserDoc = HydratedDocument<InferSchemaType<typeof userSchema>>
 
 export const routeMovesSchema = new Schema({
   blobMod: Number,
@@ -18,7 +18,9 @@ export const routeMovesSchema = new Schema({
   moves: String,
 })
 
-export type RouteMoves = InferSchemaType<typeof routeMovesSchema>
+export type RouteMovesDoc = HydratedDocument<
+  InferSchemaType<typeof routeMovesSchema>
+>
 
 export const routeSchema = new Schema(
   {
@@ -32,7 +34,7 @@ export const routeSchema = new Schema(
   { timestamps: true }
 )
 
-export type Route = InferSchemaType<typeof routeSchema>
+export type RouteDoc = HydratedDocument<InferSchemaType<typeof routeSchema>>
 
 export const levelSchema = new Schema({
   routes: [routeSchema],
@@ -43,4 +45,4 @@ export const levelSchema = new Schema({
   boldScore: Number,
 }).index({ setName: 1, levelN: 1 })
 
-export type Level = InferSchemaType<typeof levelSchema>
+export type LevelDoc = HydratedDocument<InferSchemaType<typeof levelSchema>>

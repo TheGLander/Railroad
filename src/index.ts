@@ -11,6 +11,7 @@ import { updateLevelModel } from "./levels.js"
 dotenv.config()
 
 await connect(process.env.MONGODB_LINK!)
+await updateLevelModel()
 
 const User = model("User", userSchema)
 
@@ -51,5 +52,3 @@ const port = 4943
 app.listen(port, () => {
   console.log(`Listening on http://localhost:${port}`)
 })
-
-await updateLevelModel()

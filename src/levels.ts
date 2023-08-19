@@ -1,4 +1,4 @@
-import { levelSchema } from "./schemata.js"
+import { LevelDoc, levelSchema } from "./schemata.js"
 import { model } from "mongoose"
 
 interface ApiAttributes {
@@ -53,12 +53,7 @@ async function getPackLevels(pack: string): Promise<ApiLevel[]> {
 
 const Level = model("Level", levelSchema)
 
-async function updateLevel(apiLevel: ApiLevel): Promise<void> {
-  let level = await Level.findOne({
-    setName: apiLevel.pack,
-    levelN: apiLevel.level,
-  })
-
+function updateLevel(level: LevelDoc | null, apiLevel: ApiLevel): LevelDoc {
   const boldTime = apiLevel.level_attribs.find(
     attr => attr.rule_type === "steam" && attr.metric === "time"
   )?.attribs.highest_reported
@@ -79,17 +74,30 @@ async function updateLevel(apiLevel: ApiLevel): Promise<void> {
     level.boldTime = boldTime
     level.boldScore = boldScore
   }
-  await level.save()
+  return level
+}
+
+async function updatePackLevels(pack: string): Promise<void> {
+  const apiLevels = await getPackLevels(pack)
+  const levels = await Level.find({
+    setName: pack,
+  })
+  const newLevels: LevelDoc[] = []
+
+  for (const apiLevel of apiLevels) {
+    const level = levels.find(dbLevel => dbLevel.levelN === apiLevel.level)
+    newLevels.push(updateLevel(level ?? null, apiLevel))
+  }
+
+  await Level.bulkSave(newLevels)
 }
 
 export async function updateLevelModel(): Promise<void> {
+  console.info("Updating level models")
   const packs = (await getPacks())
     .filter(pack => pack.valid_configs.some(attr => attr.rule_type === "steam"))
     .map(pack => pack.pack)
   for (const pack of packs) {
-    const levels = await getPackLevels(pack)
-    for (const level of levels) {
-      await updateLevel(level)
-    }
+    await updatePackLevels(pack)
   }
 }
