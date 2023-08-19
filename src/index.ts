@@ -1,41 +1,21 @@
-import express, { Request, ErrorRequestHandler } from "express"
-import { notFound, isBoom, badImplementation } from "@hapi/boom"
-import { getPackBestMetrics as getPackBolds } from "./bolds.js"
+import express, { ErrorRequestHandler } from "express"
+import { isBoom, badImplementation } from "@hapi/boom"
 import cors from "cors"
 import * as dotenv from "dotenv"
 import "express-async-errors"
-import { connect, model } from "mongoose"
-import { userSchema } from "./schemata.js"
+import { connect } from "mongoose"
 import { router as levelRouter, updateLevelModel } from "./levels.js"
-import { stringify } from "./utils.js"
+import { router as boldRouter } from "./bolds.js"
 
 dotenv.config()
 
 await connect(process.env.MONGODB_LINK!)
 await updateLevelModel()
 
-const User = model("User", userSchema)
-
 const app = express()
-app.use(cors())
 
-app.get(
-  "/railroad/bolds/:pack/",
-  async (req: Request<{ pack: string }>, res) => {
-    const packRes = await fetch(
-      `https://scores.bitbusters.club/scores/${req.params.pack}`
-    )
-    if (packRes.status === 404)
-      throw notFound(`Pack "${req.params.pack}" not found`)
-    else if (!packRes.ok) throw badImplementation("Scores server unresponsive")
-
-    const bolds = getPackBolds(await packRes.text())
-    res.contentType("application/json")
-    res.send(stringify(bolds))
-  }
-)
-
-app.use(levelRouter)
+app.use("/railroad", cors(), boldRouter)
+app.use("/railroad", cors(), levelRouter)
 
 app.use("/railroad", express.static("./page"))
 

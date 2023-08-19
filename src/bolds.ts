@@ -1,4 +1,7 @@
+import { badImplementation, notFound } from "@hapi/boom"
+import { Request, Router } from "express"
 import { JSDOM } from "jsdom"
+import { stringify } from "./utils.js"
 
 // We're mocking the bb.club API for easy substitution
 
@@ -95,3 +98,18 @@ export function getPackBestMetrics(pageSrc: string): ApiPackLevel[] {
   }
   return levels
 }
+
+export const router = Router()
+
+router.get("/bolds/:pack/", async (req: Request<{ pack: string }>, res) => {
+  const packRes = await fetch(
+    `https://scores.bitbusters.club/scores/${req.params.pack}`
+  )
+  if (packRes.status === 404)
+    throw notFound(`Pack "${req.params.pack}" not found`)
+  else if (!packRes.ok) throw badImplementation("Scores server unresponsive")
+
+  const bolds = getPackBestMetrics(await packRes.text())
+  res.contentType("application/json")
+  res.send(stringify(bolds))
+})

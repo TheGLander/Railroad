@@ -147,25 +147,21 @@ export async function getLevelSet(pack: string): Promise<LevelSet> {
 
 export const router = Router()
 
-router.get(
-  "/railroad/packs/:pack",
-  async (req: Request<{ pack: string }>, res) => {
-    const levels = await Level.find({
-      setName: req.params.pack,
-    }).sort({
-      levelN: 1,
-    })
-    if (levels.length === 0)
-      throw notFound(`Pack "${req.params.pack}" not found`)
-    const levelObjs = levels.map(level => {
-      const levelObj = level.toJSON()
-      // @ts-expect-error Don't really care to make a new type where _id is optional
-      delete levelObj._id
-      return levelObj
-    })
+router.get("/packs/:pack", async (req: Request<{ pack: string }>, res) => {
+  const levels = await Level.find({
+    setName: req.params.pack,
+  }).sort({
+    levelN: 1,
+  })
+  if (levels.length === 0) throw notFound(`Pack "${req.params.pack}" not found`)
+  const levelObjs = levels.map(level => {
+    const levelObj = level.toJSON()
+    // @ts-expect-error Don't really care to make a new type where _id is optional
+    delete levelObj._id
+    return levelObj
+  })
 
-    res.contentType("application/json")
-    res.write(stringify(levelObjs))
-    res.end()
-  }
-)
+  res.contentType("application/json")
+  res.write(stringify(levelObjs))
+  res.end()
+})
