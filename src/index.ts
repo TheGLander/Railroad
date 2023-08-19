@@ -6,7 +6,8 @@ import * as dotenv from "dotenv"
 import "express-async-errors"
 import { connect, model } from "mongoose"
 import { userSchema } from "./schemata.js"
-import { updateLevelModel } from "./levels.js"
+import { router as levelRouter, updateLevelModel } from "./levels.js"
+import { stringify } from "./utils.js"
 
 dotenv.config()
 
@@ -30,9 +31,11 @@ app.get(
 
     const bolds = getPackBolds(await packRes.text())
     res.contentType("application/json")
-    res.send(JSON.stringify(bolds, (_k, v) => v, 2))
+    res.send(stringify(bolds))
   }
 )
+
+app.use(levelRouter)
 
 app.use("/railroad", express.static("./page"))
 

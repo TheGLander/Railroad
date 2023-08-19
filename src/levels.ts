@@ -1,5 +1,12 @@
 import { LevelDoc, levelSchema } from "./schemata.js"
 import { model } from "mongoose"
+import { readFile, readdir } from "fs/promises"
+import path from "path"
+import { LevelSet, LevelSetLoaderFunction } from "@notcc/logic"
+import clone from "clone"
+import { Request, Router } from "express"
+import { notFound } from "@hapi/boom"
+import { stringify } from "./utils.js"
 
 interface ApiAttributes {
   rule_type: string
@@ -101,3 +108,64 @@ export async function updateLevelModel(): Promise<void> {
     await updatePackLevels(pack)
   }
 }
+
+function fsFileLoader(basePath: string): LevelSetLoaderFunction {
+  return async (extPath, binary) => {
+    const fullPath = path.join(basePath, extPath)
+    if (!binary) return readFile(fullPath, "utf-8")
+    const buf = await readFile(fullPath)
+    return buf.buffer
+  }
+}
+
+async function makeLevelSet(pack: string): Promise<LevelSet> {
+  const packPath = path.join("levels", pack)
+  const files = await readdir(packPath)
+  const scriptFiles = files.filter(file => file.endsWith(".c2g"))
+  if (scriptFiles.length !== 1) throw new Error("Couldn't find the script file")
+  const set = await LevelSet.constructAsync(
+    scriptFiles[0],
+    fsFileLoader(packPath)
+  )
+  while (!set.inPostGame) {
+    await set.getNextRecord()
+    set.lastLevelResult = { type: "skip" }
+    delete set.seenLevels[set.currentLevel].levelData
+  }
+  return set
+}
+
+const cachedSets: Record<string, LevelSet> = {}
+
+export async function getLevelSet(pack: string): Promise<LevelSet> {
+  let set = cachedSets[pack] ?? (await makeLevelSet(pack))
+  if (!(pack in cachedSets)) {
+    cachedSets[pack] = set
+  }
+  return clone(set)
+}
+
+export const router = Router()
+
+router.get(
+  "/railroad/packs/:pack",
+  async (req: Request<{ pack: string }>, res) => {
+    const levels = await Level.find({
+      setName: req.params.pack,
+    }).sort({
+      levelN: 1,
+    })
+    if (levels.length === 0)
+      throw notFound(`Pack "${req.params.pack}" not found`)
+    const levelObjs = levels.map(level => {
+      const levelObj = level.toJSON()
+      // @ts-expect-error Don't really care to make a new type where _id is optional
+      delete levelObj._id
+      return levelObj
+    })
+
+    res.contentType("application/json")
+    res.write(stringify(levelObjs))
+    res.end()
+  }
+)
