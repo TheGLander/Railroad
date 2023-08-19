@@ -63,7 +63,7 @@ function updateLevel(level: LevelDoc | null, apiLevel: ApiLevel): LevelDoc {
 
   if (level === null) {
     level = new Level({
-      setName: apiLevel.pack,
+      setName: apiLevel.pack.toLowerCase(),
       levelN: apiLevel.level,
       title: apiLevel.name,
       routes: [],
