@@ -50,6 +50,9 @@
           animation: none;
         }
       }
+      #loggedText {
+        display: none;
+      }
     </style>
   </head>
   <body>
@@ -69,9 +72,27 @@
       <a href="https://glander.club/notcc">NotCC</a>, which will have native
       support for Railroad in the near future.
     </p>
-    <script type="module">
-      import { prismifyOnPage } from "https://unpkg.com/prismify@1.0.0/prismify.js"
-      prismifyOnPage()
-    </script>
+    <h2>Username</h2>
+    <p id="signupText">
+      To submit a route, you need to pick a username. Username:
+      <input id="userNameInput" /><button id="submitUsernameButton">Ok</button
+      ><br />
+      Press <button id="useAuthTokenButton">Use Auth Token</button> if you have
+      one.
+    </p>
+    <p id="loggedText">
+      You are logged in as <b id="usernameText"></b>. If you want to use this
+      username on another device,
+      <button id="copyAuthTokenButton">Copy your Auth Token</button> and input
+      it on the new device.
+    </p>
+    <p>
+      If you are having any troubles with the username system or want to change
+      or delete your username, ask about it in the
+      <a target="_blank" href="https://discord.gg/Xd4dUY9"
+        >Chip's Challenge Bit Busters Club Discord Server</a
+      >
+    </p>
+    <script src="./index.js" type="module"></script>
   </body>
 </html>
