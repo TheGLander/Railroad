@@ -34,7 +34,9 @@ async function userFromToken(token: string) {
   return user
 }
 
-async function parseAuth(header: string | undefined): Promise<UserDoc | null> {
+export async function parseAuth(
+  header: string | undefined
+): Promise<UserDoc | null> {
   if (!header) return null
   const token = header.match(/Basic ([\w+/=]+)/)
   if (!token) return null

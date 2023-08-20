@@ -14,27 +14,25 @@ export type UserDoc = HydratedDocument<InferSchemaType<typeof userSchema>>
 
 export const routeMovesSchema = new Schema({
   blobMod: Number,
-  randomForceFloorDirection: [0, 1, 2, 3],
+  randomForceFloorDirection: Number,
   moves: String,
 })
 
-export type RouteMovesDoc = HydratedDocument<
-  InferSchemaType<typeof routeMovesSchema>
->
+export type RouteMovesSubDoc = InferSchemaType<typeof routeMovesSchema>
 
 export const routeSchema = new Schema(
   {
     moves: routeMovesSchema,
     absoluteTime: Number,
     timeLeft: Number,
-    bonusScore: Number,
+    points: Number,
     routeLabel: String,
     submitter: ref("User"),
   },
   { timestamps: true }
 )
 
-export type RouteDoc = HydratedDocument<InferSchemaType<typeof routeSchema>>
+export type RouteSubDoc = InferSchemaType<typeof routeSchema>
 
 export const levelSchema = new Schema({
   routes: [routeSchema],

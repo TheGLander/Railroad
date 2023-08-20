@@ -26,6 +26,9 @@ dependencies:
   '@types/node':
     specifier: ^20.4.5
     version: 20.4.5
+  '@types/ws':
+    specifier: ^8.5.5
+    version: 8.5.5
   clone:
     specifier: ^2.1.2
     version: 2.1.2
@@ -47,6 +50,9 @@ dependencies:
   mongoose:
     specifier: ^7.4.2
     version: 7.4.2
+  tinyws:
+    specifier: ^0.1.0
+    version: 0.1.0(ws@8.13.0)
   typescript:
     specifier: ^5.1.6
     version: 5.1.6
@@ -266,6 +272,12 @@ packages:
     dependencies:
       '@types/node': 20.4.5
       '@types/webidl-conversions': 7.0.0
+    dev: false
+
+  /@types/ws@8.5.5:
+    resolution: {integrity: sha512-lwhs8hktwxSjf9UaZ9tG5M03PGogvFaH8gUgLNbN9HKIg0dvv6q+gkSuJ8HN4/VbyxkuLzCjlN7GquQ0gUJfIg==}
+    dependencies:
+      '@types/node': 20.4.5
     dev: false
 
   /abab@2.0.6:
@@ -1265,6 +1277,15 @@ packages:
 
   /symbol-tree@3.2.4:
     resolution: {integrity: sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==}
+    dev: false
+
+  /tinyws@0.1.0(ws@8.13.0):
+    resolution: {integrity: sha512-6WQ2FlFM7qm6lAXxeKnzsAEfmnBHz5W5EwonNs52V0++YfK1IoCCAWM429afcChFE9BFrDgOFnq7ligaWMsa/A==}
+    engines: {node: '>=12.4'}
+    peerDependencies:
+      ws: '>=8'
+    dependencies:
+      ws: 8.13.0
     dev: false
 
   /to-regex-range@5.0.1:

@@ -7,17 +7,23 @@ import { connect } from "mongoose"
 import { router as levelRouter, updateLevelModel } from "./levels.js"
 import { router as boldRouter } from "./bolds.js"
 import { router as userRouter } from "./users.js"
+import { router as routesRouter } from "./routes.js"
+import { tinyws } from "tinyws"
+
+const app = express()
+
+// @ts-expect-error No idea why Typescript doesn't like this
+app.use(tinyws())
 
 dotenv.config()
 
 await connect(process.env.MONGODB_LINK!)
 await updateLevelModel()
 
-const app = express()
-
 app.use("/railroad", cors(), boldRouter)
 app.use("/railroad", cors(), levelRouter)
 app.use("/railroad", userRouter)
+app.use("/railroad", cors(), routesRouter)
 
 app.use("/railroad", express.static("./page"))
 

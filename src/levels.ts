@@ -58,7 +58,7 @@ async function getPackLevels(pack: string): Promise<ApiLevel[]> {
   return await res.json()
 }
 
-const Level = model("Level", levelSchema)
+export const Level = model("Level", levelSchema)
 
 function updateLevel(level: LevelDoc | null, apiLevel: ApiLevel): LevelDoc {
   const boldTime = apiLevel.level_attribs.find(
