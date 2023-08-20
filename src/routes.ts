@@ -13,8 +13,7 @@ import { parseAuth } from "./users.js"
 import { badRequest, unauthorized } from "@hapi/boom"
 import { TinyWSRequest } from "tinyws"
 import WebSocket from "ws"
-import { LevelDoc, RouteSubDoc, UserDoc, routeSchema } from "./schemata.js"
-import { model } from "mongoose"
+import { LevelDoc, RouteSchema, UserDoc } from "./schemata.js"
 
 interface RouteFor {
   Set?: string
@@ -156,28 +155,7 @@ const scriptNameToPackName: Record<string, string> = {
 interface RouteSubmission {
   level: LevelDoc
   routeId: string
-  route: RouteSubDoc
-}
-
-export function findMainlineRoutes(
-  level: LevelDoc
-): Record<"time" | "score", RouteSubDoc> | null {
-  const time = level.routes.reduce<null | RouteSubDoc>(
-    (acc, val) =>
-      acc === null ||
-      (val.timeLeft && acc.timeLeft && val.timeLeft > acc.timeLeft)
-        ? (val as RouteSubDoc)
-        : (acc as RouteSubDoc),
-    null
-  )
-  const score = level.routes.reduce<null | RouteSubDoc>(
-    (acc, val) =>
-      acc === null || (val.points && acc.points && val.points > acc.points)
-        ? (val as RouteSubDoc)
-        : (acc as RouteSubDoc),
-    null
-  )
-  return time === null || score === null ? null : { time, score }
+  route: RouteSchema
 }
 
 class RouteWsServer {
@@ -266,7 +244,7 @@ class RouteWsServer {
 
     const nowDate = new Date()
 
-    const routeDoc: RouteSubDoc = {
+    const routeDoc: RouteSchema = {
       moves: {
         moves: route.Moves,
         randomForceFloorDirection: route["Initial Slide"],
@@ -324,11 +302,13 @@ class RouteWsServer {
         issuesRaised = true
       }
       if (label === "mainline") {
-        const mainlineRoutes = findMainlineRoutes(sub.level)
+        const mainlineTimeRoute = sub.level.mainlineTimeRoute
+        const mainlineScoreRoute = sub.level.mainlineScoreRoute
         if (
-          mainlineRoutes &&
-          mainlineRoutes.time.timeLeft! >= sub.route.timeLeft! &&
-          mainlineRoutes.time.points! >= sub.route.points!
+          mainlineTimeRoute &&
+          mainlineTimeRoute.timeLeft! >= sub.route.timeLeft! &&
+          mainlineScoreRoute &&
+          mainlineScoreRoute.points! >= sub.route.points!
         ) {
           this.wsSend({
             type: "error",

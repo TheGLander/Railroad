@@ -158,12 +158,16 @@ router.get("/packs/:pack", async (req: Request<{ pack: string }>, res) => {
 
   if (levels.length === 0) throw notFound(`Pack "${req.params.pack}" not found`)
   const levelObjs = levels.map(level => {
-    const levelObj = level.toJSON()
-    // @ts-expect-error Don't really care to make a new type where _id is optional
+    const levelObj: any = level.toJSON({ virtuals: true, versionKey: false })
     delete levelObj._id
+    delete levelObj.id
+    levelObj.mainlineTimeRoute = levelObj.mainlineTimeRoute?.id
+    levelObj.mainlineScoreRoute = levelObj.mainlineScoreRoute?.id
     for (const route of levelObj.routes) {
-      // @ts-expect-error Don't really care to make a new type where `submitter` is a username string
-      route.submitter = (route.submitter as UserDoc).userName
+      delete route._id
+      delete route.moves.id
+      delete route.moves._id
+      route.submitter = route.submitter.userName
     }
     return levelObj
   })
