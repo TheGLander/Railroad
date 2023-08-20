@@ -139,6 +139,7 @@ async function runRoute(
     level.tick()
     level.tick()
     level.tick()
+    if (level.gameState !== GameState.PLAYING) break
     breatheCounter += 1
     if (breatheCounter % BREATHE_INTERVAL === 0) {
       await breathe(parseInt(moveN) / moves.length)
