@@ -1,4 +1,4 @@
-import { LevelDoc, levelSchema } from "./schemata.js"
+import { LevelDoc, UserDoc, levelSchema } from "./schemata.js"
 import { model } from "mongoose"
 import { readFile, readdir } from "fs/promises"
 import path from "path"
@@ -150,14 +150,21 @@ export const router = Router()
 router.get("/packs/:pack", async (req: Request<{ pack: string }>, res) => {
   const levels = await Level.find({
     setName: req.params.pack,
-  }).sort({
-    levelN: 1,
   })
+    .sort({
+      levelN: 1,
+    })
+    .populate("routes.submitter", "userName")
+
   if (levels.length === 0) throw notFound(`Pack "${req.params.pack}" not found`)
   const levelObjs = levels.map(level => {
     const levelObj = level.toJSON()
     // @ts-expect-error Don't really care to make a new type where _id is optional
     delete levelObj._id
+    for (const route of levelObj.routes) {
+      // @ts-expect-error Don't really care to make a new type where `submitter` is a username string
+      route.submitter = (route.submitter as UserDoc).userName
+    }
     return levelObj
   })
 

@@ -277,7 +277,6 @@ class RouteWsServer {
       absoluteTime: (level.currentTick * 3 + level.subtick) / 60,
       submitter: this.user.id,
       createdAt: nowDate,
-      updatedAt: nowDate,
     }
 
     this.submissions.push({ route: routeDoc, routeId, level: levelDoc })

@@ -20,17 +20,15 @@ export const routeMovesSchema = new Schema({
 
 export type RouteMovesSubDoc = InferSchemaType<typeof routeMovesSchema>
 
-export const routeSchema = new Schema(
-  {
-    moves: routeMovesSchema,
-    absoluteTime: Number,
-    timeLeft: Number,
-    points: Number,
-    routeLabel: String,
-    submitter: ref("User"),
-  },
-  { timestamps: true }
-)
+export const routeSchema = new Schema({
+  moves: routeMovesSchema,
+  absoluteTime: Number,
+  timeLeft: Number,
+  points: Number,
+  routeLabel: String,
+  submitter: ref("User"),
+  createdAt: Date,
+})
 
 export type RouteSubDoc = InferSchemaType<typeof routeSchema>
 
