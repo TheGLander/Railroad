@@ -17,7 +17,7 @@ function readAuthToken() {
 readAuthToken()
 
 copyAuthTokenButton.addEventListener("click", () => {
-  navigator.clipboard.writeText(authToken)
+  navigator.clipboard.writeText(localStorage.getItem("railroad-auth-token"))
 })
 
 async function submitUsername() {
