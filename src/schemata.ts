@@ -39,11 +39,14 @@ export const userSchema = new Schema({
 
 export type UserDoc = InferDocType<typeof userSchema>
 
-export const routeMovesSchema = new Schema({
-  blobMod: Number,
-  randomForceFloorDirection: Number,
-  moves: String,
-})
+export const routeMovesSchema = new Schema(
+  {
+    BlobMod: Number,
+    "Initial Slide": Number,
+    Moves: String,
+  },
+  { strict: false }
+)
 
 export type RouteMovesSubDoc = InferSubdocType<typeof routeMovesSchema>
 

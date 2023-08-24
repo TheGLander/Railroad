@@ -246,11 +246,7 @@ class RouteWsServer {
     const nowDate = new Date()
 
     const routeDoc: RouteSchema = {
-      moves: {
-        moves: route.Moves,
-        randomForceFloorDirection: route["Initial Slide"],
-        blobMod: route.Blobmod,
-      },
+      moves: route,
       timeLeft: metrics.timeLeft,
       points: metrics.points,
       absoluteTime: (level.currentTick * 3 + level.subtick) / 60,
