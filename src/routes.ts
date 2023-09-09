@@ -109,17 +109,32 @@ class RouteWsServer {
   submissions: RouteSubmission[] = []
   constructor(public ws: WebSocket, public user: UserDoc) {
     ws.on("message", msgData => {
-      const msg: ClientMessage = JSON.parse(msgData.toString("utf-8"))
-      if (msg.type === "add route") {
-        this.addRoute(msg)
-      } else if (msg.type === "remove route") {
-        this.removeRoute(msg)
-      } else if (msg.type === "submit") {
-        this.submitRoutes(msg)
-      } else {
-        this.wsSend({ type: "error", error: "Unknown message type" })
+      try {
+        let msg: ClientMessage
+        try {
+          const stringData = msgData.toString("utf-8")
+          msg = JSON.parse(stringData)
+        } catch {
+          this.wsSend({ type: "error", error: "Invalid message format" })
+          return
+        }
+        this.handleClientMessage(msg)
+      } catch (err) {
+        console.error(err)
+        this.wsSend({ type: "error", error: "Internal error" })
       }
     })
+  }
+  handleClientMessage(msg: ClientMessage) {
+    if (msg.type === "add route") {
+      this.addRoute(msg)
+    } else if (msg.type === "remove route") {
+      this.removeRoute(msg)
+    } else if (msg.type === "submit") {
+      this.submitRoutes(msg)
+    } else {
+      this.wsSend({ type: "error", error: "Unknown message type" })
+    }
   }
   wsSend(msg: ServerMessage) {
     this.ws.send(JSON.stringify(msg))
