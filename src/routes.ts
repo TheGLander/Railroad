@@ -1,11 +1,11 @@
 import {
-  Direction,
   GameState,
-  KeyInputs,
   LevelState,
   SolutionMetrics,
   calculateLevelPoints,
   createLevelFromData,
+  Route as RouteFile,
+  RouteFileInputProvider,
 } from "@notcc/logic"
 import { Level, getLevelSet } from "./levels.js"
 import { Request, Router } from "express"
@@ -14,29 +14,6 @@ import { badRequest, unauthorized } from "@hapi/boom"
 import { TinyWSRequest } from "tinyws"
 import WebSocket from "ws"
 import { LevelDoc, RouteSchema, UserDoc } from "./schemata.js"
-
-interface RouteFor {
-  Set?: string
-  LevelName?: string
-  LevelNumber?: number
-}
-
-interface RouteFile {
-  Moves: string
-  Rule: string
-  Encode?: "UTF-8"
-  "Initial Slide"?: Direction
-  /**
-   * Not the same as "Seed", as Blobmod only affects blobs and nothing else, unlilke the seed in TW, which affects all randomness
-   */
-  Blobmod?: number
-  // Unused in CC2
-  Step?: never
-  Seed?: never
-  // NotCC-invented metadata
-  For?: RouteFor
-  ExportApp?: string
-}
 
 type ScoreMetrics = Omit<SolutionMetrics, "realTime">
 
@@ -90,34 +67,6 @@ type ServerMessage =
   | ServerLevelReportMessage
   | ServerDoneMessage
 
-function splitCharString(charString: string): string[] {
-  return charString.split(/(?<![pcs])/)
-}
-
-const charToDir: Record<string, keyof KeyInputs> = {
-  u: "up",
-  r: "right",
-  d: "down",
-  l: "left",
-}
-
-function charToInput(char: string): KeyInputs {
-  const input = {
-    drop: char.includes("p"),
-    rotateInv: char.includes("c"),
-    switchPlayable: char.includes("s"),
-    up: false,
-    right: false,
-    down: false,
-    left: false,
-  }
-  const lastChar = char[char.length - 1]
-  if (lastChar in charToDir) {
-    input[charToDir[lastChar]] = true
-  }
-  return input
-}
-
 const BREATHE_INTERVAL = 100
 
 async function runRoute(
@@ -125,24 +74,21 @@ async function runRoute(
   route: RouteFile,
   breathe: (progress: number) => Promise<void>
 ): Promise<void> {
-  const moves = splitCharString(route.Moves)
-  level.randomForceFloorDirection = route["Initial Slide"] ?? Direction.UP
-  level.blobPrngValue = route.Blobmod ?? 0x88
+  const ip = new RouteFileInputProvider(route)
+  level.inputProvider = ip
+  const routeLength = ip.moves.length * 3
 
   level.tick()
   level.tick()
 
   let breatheCounter = 0
-  for (const [moveN, moveChar] of Object.entries(moves)) {
-    const inputs = charToInput(moveChar)
-    level.gameInput = inputs
+  while (level.gameState === GameState.PLAYING) {
     level.tick()
     level.tick()
     level.tick()
-    if (level.gameState !== GameState.PLAYING) break
     breatheCounter += 1
     if (breatheCounter % BREATHE_INTERVAL === 0) {
-      await breathe(parseInt(moveN) / moves.length)
+      await breathe((level.currentTick * 3 + level.subtick) / routeLength)
     }
   }
 }

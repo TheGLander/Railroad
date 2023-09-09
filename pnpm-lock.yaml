@@ -9,8 +9,8 @@ dependencies:
     specifier: ^10.0.1
     version: 10.0.1
   '@notcc/logic':
-    specifier: ^1.0.0
-    version: 1.0.0
+    specifier: ^1.1.0
+    version: 1.1.0
   '@types/clone':
     specifier: ^2.1.1
     version: 2.1.1
@@ -100,8 +100,8 @@ packages:
       '@jridgewell/sourcemap-codec': 1.4.15
     dev: true
 
-  /@notcc/logic@1.0.0:
-    resolution: {integrity: sha512-QDa0VeSwbiA/i0oNU6b9D/J2ou5BRZ7vjW3/3qzQY91SzLtEidTuOm1uUE75S5XcMDg/0e5awwyjyAUBipjI+Q==}
+  /@notcc/logic@1.1.0:
+    resolution: {integrity: sha512-tpCHnmfu87nu9tnAxwrei/5lHFUFZS6YKSq5D6NwRottG7c6BVx2xZgHhjx32G48MD0rg7Yh9f+lSv2/G2qceQ==}
     dependencies:
       clone: 2.1.2
       fast-printf: 1.6.9
@@ -412,7 +412,7 @@ packages:
       normalize-path: 3.0.0
       readdirp: 3.6.0
     optionalDependencies:
-      fsevents: 2.3.2
+      fsevents: 2.3.3
     dev: true
 
   /clone@2.1.2:
@@ -669,8 +669,8 @@ packages:
     engines: {node: '>= 0.6'}
     dev: false
 
-  /fsevents@2.3.2:
-    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
+  /fsevents@2.3.3:
+    resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
     requiresBuild: true
