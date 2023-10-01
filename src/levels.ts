@@ -109,9 +109,28 @@ export async function updateLevelModel(): Promise<void> {
   }
 }
 
+async function caseInsensitivePathJoin(
+  basePath: string,
+  extPath: string
+): Promise<string> {
+  const pathSegments = extPath.split("/")
+  const truePathSegments: string[] = []
+  for (const segment of pathSegments) {
+    const dirPath = path.join(basePath, ...truePathSegments)
+    const dirList = await readdir(dirPath)
+    const trueSegment = dirList.find(
+      ent => ent.toLowerCase() === segment.toLowerCase()
+    )
+    if (!trueSegment)
+      throw new Error(`No directory "${segment}" in ${dirPath} found`)
+    truePathSegments.push(trueSegment)
+  }
+  return path.join(basePath, ...truePathSegments)
+}
+
 function fsFileLoader(basePath: string): LevelSetLoaderFunction {
   return async (extPath, binary) => {
-    const fullPath = path.join(basePath, extPath)
+    const fullPath = await caseInsensitivePathJoin(basePath, extPath)
     if (!binary) return readFile(fullPath, "utf-8")
     const buf = await readFile(fullPath)
     return buf.buffer
