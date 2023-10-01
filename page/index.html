@@ -8,52 +8,7 @@
     />
     <link rel="icon" href="icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <style>
-      body {
-        --bg-overlay-color: #0008;
-        background: linear-gradient(
-            var(--bg-overlay-color),
-            var(--bg-overlay-color)
-          ),
-          url(background.png);
-        color: whitesmoke;
-        font-family: sans-serif;
-        margin: 1em;
-      }
-      .title-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-direction: row;
-        padding: 0.5em;
-      }
-      a {
-        color: whitesmoke;
-      }
-      h1 {
-        margin-inline: 1em;
-      }
-      .spinning-icon {
-        display: inline-block;
-      }
-      .spinning-icon > * {
-        --x-rotate-amount: 180deg;
-        --y-rotate-amount: 0deg;
-        --z-offset: -0.5em;
-        animation: 5s linear infinite running prismify-rotate;
-      }
-      .spinning-icon:last-child > * {
-        animation-direction: reverse;
-      }
-      @media (prefers-reduced-motion) {
-        .spinning-icon > * {
-          animation: none;
-        }
-      }
-      #loggedText {
-        display: none;
-      }
-    </style>
+    <link rel="stylesheet" href="./index.css" />
   </head>
   <body>
     <div class="title-container">
@@ -73,14 +28,14 @@
       support for Railroad in the near future.
     </p>
     <h2>Username</h2>
-    <p id="signupText">
+    <p class="loggedOutOnly">
       To submit a route, you need to pick a username. Username:
       <input id="userNameInput" /><button id="submitUsernameButton">Ok</button
       ><br />
       Press <button id="useAuthTokenButton">Use Auth Token</button> if you have
       one.
     </p>
-    <p id="loggedText">
+    <p class="loggedInOnly">
       You are logged in as <b id="usernameText"></b>. If you want to use this
       username on another device,
       <button id="copyAuthTokenButton">Copy your Auth Token</button> and input
@@ -93,6 +48,25 @@
         >Chip's Challenge Bit Busters Club Discord Server</a
       >
     </p>
+    <h2>Upload</h2>
+    <p class="loggedOutOnly">Pick a username to upload routes.</p>
+    <p class="loggedInOnly">
+      Upload <span id="moreRoutesText">more </span>route files by dragging them
+      onto the website or by clicking
+      <button id="uploadRouteButton">Upload</button>.
+    </p>
+    <table id="uploadZone" class="loggedInOnly">
+      <thead>
+        <tr>
+          <th>Level</th>
+          <th>Metrics</th>
+          <th>Category</th>
+          <th>Remove</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button id="submitRoutesButton" disabled>Submit!!</button>
     <script src="./index.js" type="module"></script>
   </body>
 </html>

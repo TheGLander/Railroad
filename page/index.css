@@ -1,0 +1,78 @@
+body {
+  --bg-overlay-color: #0008;
+  background: linear-gradient(var(--bg-overlay-color), var(--bg-overlay-color)),
+    url(background.png);
+  color: whitesmoke;
+  font-family: sans-serif;
+  margin: 1em;
+  min-height: calc(100vh - 2em);
+}
+.title-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: row;
+  padding: 0.5em;
+}
+a {
+  color: whitesmoke;
+}
+h1 {
+  margin-inline: 1em;
+}
+.spinning-icon {
+  display: inline-block;
+}
+.spinning-icon > * {
+  --x-rotate-amount: 180deg;
+  --y-rotate-amount: 0deg;
+  --z-offset: -0.5em;
+  animation: 5s linear infinite running prismify-rotate;
+}
+.spinning-icon:last-child > * {
+  animation-direction: reverse;
+}
+@media (prefers-reduced-motion) {
+  .spinning-icon > * {
+    animation: none;
+  }
+}
+
+body:not([data-logged-in]) .loggedInOnly {
+  display: none;
+}
+
+body[data-logged-in] .loggedOutOnly {
+  display: none;
+}
+
+#moreRoutesText {
+  display: none;
+}
+
+#moreRoutesText.shown {
+  display: inline;
+}
+#uploadZone {
+  width: 100%;
+  border-spacing: 0;
+  text-align: center;
+}
+
+#uploadZone th,
+#uploadZone td {
+  border: groove currentColor 3px;
+}
+
+#uploadZone td:first-child {
+  text-align: left;
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+}
+
+#submitRoutesButton {
+  margin-left: auto;
+  margin-top: 0.5em;
+  margin-right: 0.5em;
+  display: block;
+}
