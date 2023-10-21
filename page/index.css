@@ -53,18 +53,18 @@ body[data-logged-in] .loggedOutOnly {
 #moreRoutesText.shown {
   display: inline;
 }
-#uploadZone {
+table {
   width: 100%;
   border-spacing: 0;
   text-align: center;
 }
 
-#uploadZone th,
-#uploadZone td {
+table th,
+table td {
   border: groove currentColor 3px;
 }
 
-#uploadZone td:first-child {
+table tbody th {
   text-align: left;
   padding-top: 0.5em;
   padding-bottom: 0.5em;
@@ -75,4 +75,24 @@ body[data-logged-in] .loggedOutOnly {
   margin-top: 0.5em;
   margin-right: 0.5em;
   display: block;
+}
+
+#routesListTable:not(.shown) {
+  display: none;
+}
+
+#routesListTable tbody th {
+  background-color: transparent;
+}
+
+#routesListTable tbody tr.mainline td {
+  background-color: #8808;
+}
+
+#routesListTable tbody tr.mainline-old td {
+  background-color: #6668;
+}
+
+#routesListTable tr.misc td {
+  background-color: #8088;
 }

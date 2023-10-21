@@ -1,3 +1,4 @@
+import { makeMetricText } from "./helpers.js"
 import { getAuthInfo, makeAuthHeader } from "./user.js"
 
 function filePrompt() {
@@ -103,25 +104,12 @@ function wsCloseHandler() {
   }
 }
 
-function makeMetricText(upload, metricName, metricSuffix) {
-  const metric = upload.metrics[metricName]
-  const boldMetric = upload.boldMetrics[metricName]
-  let text = `${metric}${metricSuffix}`
-  if (metric > boldMetric) {
-    text += ` (b+${metric - boldMetric})`
-  } else if (metric === boldMetric) {
-    text += ` (b)`
-  }
-  const metricEl = document.createElement(metric >= boldMetric ? "b" : "span")
-  metricEl.innerText = text
-  return metricEl
-}
-
 function rebuildRoute(upload) {
   const route = upload.route
   const row = document.createElement("tr")
 
-  const levelName = document.createElement("td")
+  const levelName = document.createElement("th")
+  levelName.scope = "row"
   levelName.innerText = `${route.For.Set} #${route.For.LevelNumber}: ${route.For.LevelName}`
   row.appendChild(levelName)
 
@@ -196,7 +184,7 @@ function rebuildRoutes() {
   }
   moreRoutesText.classList.toggle("shown", uploadList.children.length > 1)
   submitRoutesButton.disabled = !uploads.every(
-    upload => upload.progress === 1 && !upload.errorMsg
+    upload => upload.progress === 1 && !upload.errorMsg,
   )
 }
 
