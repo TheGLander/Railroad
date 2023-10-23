@@ -46,7 +46,7 @@ let ws = null
 function getWs() {
   if (ws === null || ws.readyState === ws.CLOSED) {
     const url = new URL(location.href)
-    url.protocol = location.protocol === "https" ? "wss:" : "ws:"
+    url.protocol = location.protocol === "https:" ? "wss:" : "ws:"
     url.pathname += "routes"
     const authInfo = getAuthInfo()
     url.username = authInfo.username
