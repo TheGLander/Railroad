@@ -46,7 +46,7 @@ let ws = null
 function getWs() {
   if (ws === null || ws.readyState === ws.CLOSED) {
     const url = new URL(location.href)
-    url.protocol = "ws:"
+    url.protocol = location.protocol === "https" ? "wss:" : "ws:"
     url.pathname += "routes"
     const authInfo = getAuthInfo()
     url.username = authInfo.username
@@ -184,7 +184,7 @@ function rebuildRoutes() {
   }
   moreRoutesText.classList.toggle("shown", uploadList.children.length > 1)
   submitRoutesButton.disabled = !uploads.every(
-    upload => upload.progress === 1 && !upload.errorMsg,
+    upload => upload.progress === 1 && !upload.errorMsg
   )
 }
 
