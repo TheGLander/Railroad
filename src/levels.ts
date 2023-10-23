@@ -140,8 +140,8 @@ function fsFileLoader(basePath: string): LevelSetLoaderFunction {
 async function makeLevelSet(pack: string): Promise<LevelSet> {
   const packPath = path.join("levels", pack)
   const files = await readdir(packPath)
-  const scriptFiles = files.filter(file => file.endsWith(".c2g"))
-  if (scriptFiles.length !== 1) throw new Error("Couldn't find the script file")
+  const scriptFiles = files.filter(file => file.endsWith(".c2g")).sort()
+  if (scriptFiles.length === 0) throw new Error("Couldn't find the script file")
   const set = await LevelSet.constructAsync(
     scriptFiles[0],
     fsFileLoader(packPath)
