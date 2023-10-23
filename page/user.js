@@ -22,6 +22,7 @@ async function submitUsername() {
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
+      Authorization: "",
     },
     body: JSON.stringify({ userName: userNameInput.value }),
   })
