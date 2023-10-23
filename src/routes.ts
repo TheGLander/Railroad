@@ -13,7 +13,8 @@ import { parseAuth } from "./users.js"
 import { badRequest, unauthorized } from "@hapi/boom"
 import { TinyWSRequest } from "tinyws"
 import WebSocket from "ws"
-import { LevelDoc, RouteSchema, UserDoc } from "./schemata.js"
+import { LevelDoc, RouteSchema, RouteSubDoc, UserDoc } from "./schemata.js"
+import { announceNewRouteSubmissions } from "./discord.js"
 
 type ScoreMetrics = Omit<SolutionMetrics, "realTime">
 
@@ -99,7 +100,7 @@ const scriptNameToPackName: Record<string, string> = {
   "Chips Challenge 2 Level Pack 1": "cc2lp1",
 }
 
-interface RouteSubmission {
+export interface RouteSubmission {
   level: LevelDoc
   routeId: string
   route: RouteSchema
@@ -249,6 +250,8 @@ class RouteWsServer {
       return
     }
     let issuesRaised = false
+    const mainlineSubmissionsBetterThan: Map<RouteSubmission, RouteSubDoc[]> =
+      new Map()
     for (const sub of this.submissions) {
       const label = msg.categories[sub.routeId]
       if (!label) {
@@ -262,12 +265,13 @@ class RouteWsServer {
       if (label === "mainline") {
         const mainlineTimeRoute = sub.level.mainlineTimeRoute
         const mainlineScoreRoute = sub.level.mainlineScoreRoute
-        if (
-          mainlineTimeRoute &&
-          mainlineTimeRoute.timeLeft! >= sub.route.timeLeft! &&
-          mainlineScoreRoute &&
-          mainlineScoreRoute.points! >= sub.route.points!
-        ) {
+        const betterThanTime =
+          !mainlineTimeRoute ||
+          mainlineTimeRoute.timeLeft! < sub.route.timeLeft!
+        const betterThanScore =
+          !mainlineScoreRoute || mainlineScoreRoute.points! < sub.route.points!
+
+        if (!betterThanTime && !betterThanScore) {
           this.wsSend({
             type: "error",
             routeId: sub.routeId,
@@ -275,7 +279,15 @@ class RouteWsServer {
               "Submission tagged as mainline, but a better mainline route already exists. If your route showcases an alternate solution, tag it as non-mainline. If you think the current mainline solution should be tagged as non-mainline, raise the issue on the Discord server.",
           })
           issuesRaised = true
+          continue
         }
+        mainlineSubmissionsBetterThan.set(
+          sub,
+          [
+            betterThanTime ? mainlineTimeRoute : null,
+            betterThanScore ? mainlineScoreRoute : null,
+          ].filter((route): route is RouteSubDoc => route !== null)
+        )
       }
       sub.route.routeLabel = label
     }
@@ -284,6 +296,11 @@ class RouteWsServer {
       sub.level.routes.push(sub.route)
     }
     await Level.bulkSave(this.submissions.map(sub => sub.level))
+    await announceNewRouteSubmissions(
+      this.submissions,
+      this.user,
+      mainlineSubmissionsBetterThan
+    )
     this.wsSend({ type: "done" })
     this.submissions = []
   }

@@ -1,7 +1,9 @@
+import * as dotenv from "dotenv"
+dotenv.config()
+
 import express, { ErrorRequestHandler } from "express"
 import { isBoom, badImplementation } from "@hapi/boom"
 import cors from "cors"
-import * as dotenv from "dotenv"
 import "express-async-errors"
 import { connect } from "mongoose"
 import { router as levelRouter, updateLevelModel } from "./levels.js"
@@ -15,7 +17,6 @@ const app = express()
 // @ts-expect-error No idea why Typescript doesn't like this
 app.use(tinyws())
 
-dotenv.config()
 
 await connect(process.env.MONGODB_LINK!)
 await updateLevelModel()

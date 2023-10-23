@@ -4,6 +4,7 @@ import { UserDoc, userSchema } from "./schemata.js"
 import { badRequest } from "@hapi/boom"
 import { randomBytes } from "crypto"
 import { stringify } from "./utils.js"
+import { announceNewUser } from "./discord.js"
 
 export const User = model("User", userSchema)
 
@@ -70,4 +71,5 @@ router.post("/users", async (req, res) => {
   res.contentType("application/json")
   res.write(stringify({ userName: user.userName, authId: user.authId }))
   res.end()
+  await announceNewUser(user)
 })
