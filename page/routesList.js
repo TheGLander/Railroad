@@ -40,10 +40,17 @@ function downloadFile(fileData, name) {
 
 function makeLevelsRows(level) {
   const levelTh = document.createElement("th")
-  levelTh.scope = "row"
-  levelTh.innerText = `${level.setName.toUpperCase()} #${level.levelN}: ${
+  const levelAnchor = document.createElement("a")
+  levelAnchor.innerText = `${level.setName.toUpperCase()} #${level.levelN}: ${
     level.title
   }`
+  levelAnchor.href = `https://scores.bitbusters.club/levels/${level.setName}/${level.levelN}`
+  if (level.setName === "cc1") {
+    levelAnchor.href += "/steam"
+  }
+  levelAnchor.target = "_blank"
+  levelTh.appendChild(levelAnchor)
+  levelTh.scope = "row"
   levelTh.rowSpan = level.routes.length
   const pastMainlineCount = level.routes.reduce(
     (acc, val) =>
