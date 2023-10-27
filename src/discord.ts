@@ -50,16 +50,28 @@ export async function announceNewRouteSubmissions(
       } else {
         const betterThan = mainlineSubmissionsBetterThan.get(sub)!
         // If this route is better than both existing mainlines, or if there were
-        // no mainlines before this one, use generic generic "new mainline" wording
-        if (betterThan.length !== 1) {
+        // no mainlines before this one, use generic "new mainline" wording
+        if (betterThan.length === 0) {
           routeType = "mainline"
+        }
+        // If we only have one metric (CC1 Steam), we can only compare against one route,
+        // and can generate an improvement string without thinking about it too hard, hurray
+        else if (betterThan.length > 1 && level.setName === "cc1") {
+          routeType = "mainline"
+          const oldRoute = betterThan[0]
+          routeImprovement = `, an improvement of ${
+            route.timeLeft! - oldRoute.timeLeft!
+          }s`
         } else {
           const isRouteMainlineScore = level.mainlineScoreRoute?.id === route.id
-          const oldRoute = betterThan[1]
+          const oldRoute = betterThan[0]
           routeType = `mainline ${isRouteMainlineScore ? "score" : "time"}`
+          // NOTE: This returns funny results when a route targeting one metric is submitted
+          // when there's a generic mainline route, such as "an improvement of -2s / 80pts",
+          // but I figure that's fine.
           routeImprovement = `, an improvement of ${
-            oldRoute.timeLeft! - route.timeLeft!
-          }s / ${oldRoute.points! - route.points!}pts`
+            route.timeLeft! - oldRoute.timeLeft!
+          }s / ${route.points! - oldRoute.points!}pts`
         }
       }
       function writeMetric(suffix: string, thisVal: number, boldVal: number) {
