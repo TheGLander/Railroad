@@ -2,7 +2,11 @@ import { LevelDoc, UserDoc, levelSchema } from "./schemata.js"
 import { model } from "mongoose"
 import { readFile, readdir } from "fs/promises"
 import path from "path"
-import { LevelSet, LevelSetLoaderFunction } from "@notcc/logic"
+import {
+  LevelSet,
+  LevelSetLoaderFunction,
+  calculateLevelPoints,
+} from "@notcc/logic"
 import clone from "clone"
 import { Request, Router } from "express"
 import { notFound } from "@hapi/boom"
@@ -64,9 +68,11 @@ function updateLevel(level: LevelDoc | null, apiLevel: ApiLevel): LevelDoc {
   const boldTime = apiLevel.level_attribs.find(
     attr => attr.rule_type === "steam" && attr.metric === "time"
   )?.attribs.highest_reported
-  const boldScore = apiLevel.level_attribs.find(
-    attr => attr.rule_type === "steam" && attr.metric === "score"
-  )?.attribs.highest_reported
+  const boldScore =
+    apiLevel.level_attribs.find(
+      attr => attr.rule_type === "steam" && attr.metric === "score"
+    )?.attribs.highest_reported ??
+    calculateLevelPoints(apiLevel.level, boldTime!)
 
   if (level === null) {
     level = new Level({
