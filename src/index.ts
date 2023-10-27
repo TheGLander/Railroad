@@ -17,7 +17,6 @@ const app = express()
 // @ts-expect-error No idea why Typescript doesn't like this
 app.use(tinyws())
 
-
 await connect(process.env.MONGODB_LINK!)
 await updateLevelModel()
 

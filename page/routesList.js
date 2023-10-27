@@ -55,7 +55,7 @@ function makeLevelsRows(level) {
       )
         ? 1
         : 0),
-    0,
+    0
   )
 
   const rows = document.createDocumentFragment()
@@ -66,7 +66,7 @@ function makeLevelsRows(level) {
   for (const route of sortRoutes(
     level.routes,
     level.mainlineTimeRoute,
-    level.mainlineScoreRoute,
+    level.mainlineScoreRoute
   )) {
     const row = document.createElement("tr")
     if (firstRow) {
