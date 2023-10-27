@@ -64,8 +64,12 @@ export async function announceNewRouteSubmissions(
           }s`
         } else {
           const isRouteMainlineScore = level.mainlineScoreRoute?.id === route.id
+          const isRouteMainlineTime = level.mainlineTimeRoute?.id === route.id
           const oldRoute = betterThan[0]
-          routeType = `mainline ${isRouteMainlineScore ? "score" : "time"}`
+          routeType =
+            isRouteMainlineScore && isRouteMainlineTime
+              ? "mainline"
+              : `mainline ${isRouteMainlineScore ? "score" : "time"}`
           // NOTE: This returns funny results when a route targeting one metric is submitted
           // when there's a generic mainline route, such as "an improvement of -2s / 80pts",
           // but I figure that's fine.

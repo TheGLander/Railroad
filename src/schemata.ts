@@ -77,26 +77,30 @@ export const levelSchema = new Schema(
     virtuals: {
       mainlineTimeRoute: {
         get() {
-          return this.routes.reduce<null | RouteSubDoc>(
-            (acc, val) =>
-              acc === null ||
-              (val.timeLeft && acc.timeLeft && val.timeLeft > acc.timeLeft)
-                ? val
-                : acc,
-            null
-          )
+          return Array.from(this.routes)
+            .reverse()
+            .reduce<null | RouteSubDoc>(
+              (acc, val) =>
+                acc === null ||
+                (val.timeLeft && acc.timeLeft && val.timeLeft > acc.timeLeft)
+                  ? val
+                  : acc,
+              null
+            )
         },
       },
       mainlineScoreRoute: {
         get() {
-          return this.routes.reduce<null | RouteSubDoc>(
-            (acc, val) =>
-              acc === null ||
-              (val.points && acc.points && val.points > acc.points)
-                ? val
-                : acc,
-            null
-          )
+          return Array.from(this.routes)
+            .reverse()
+            .reduce<null | RouteSubDoc>(
+              (acc, val) =>
+                acc === null ||
+                (val.points && acc.points && val.points > acc.points)
+                  ? val
+                  : acc,
+              null
+            )
         },
       },
     },

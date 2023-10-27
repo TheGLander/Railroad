@@ -108,7 +108,10 @@ export interface RouteSubmission {
 
 class RouteWsServer {
   submissions: RouteSubmission[] = []
-  constructor(public ws: WebSocket, public user: UserDoc) {
+  constructor(
+    public ws: WebSocket,
+    public user: UserDoc
+  ) {
     ws.on("message", msgData => {
       try {
         let msg: ClientMessage
@@ -267,9 +270,9 @@ class RouteWsServer {
         const mainlineScoreRoute = sub.level.mainlineScoreRoute
         const betterThanTime =
           !mainlineTimeRoute ||
-          mainlineTimeRoute.timeLeft! < sub.route.timeLeft!
+          mainlineTimeRoute.timeLeft! <= sub.route.timeLeft!
         const betterThanScore =
-          !mainlineScoreRoute || mainlineScoreRoute.points! < sub.route.points!
+          !mainlineScoreRoute || mainlineScoreRoute.points! <= sub.route.points!
 
         if (!betterThanTime && !betterThanScore) {
           this.wsSend({
