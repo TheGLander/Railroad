@@ -6,6 +6,14 @@ routesListSelector.addEventListener("input", () => {
 
 const routesList = routesListTable.querySelector("tbody")
 
+async function scrollIntoLevelRoute(id) {
+  const setName = id.split("-")[0]
+  routesListSelector.value = setName
+  await updateRoutesTable()
+  const routeRow = document.getElementById(id)
+  routeRow.scrollIntoView()
+}
+
 async function updateRoutesTable() {
   const setName = routesListSelector.value
   routesList.innerText = ""
@@ -48,7 +56,6 @@ function makeLevelsRows(level) {
   if (level.setName === "cc1") {
     levelAnchor.href += "/steam"
   }
-  levelAnchor.target = "_blank"
   levelTh.appendChild(levelAnchor)
   levelTh.scope = "row"
   levelTh.rowSpan = level.routes.length
@@ -76,6 +83,7 @@ function makeLevelsRows(level) {
     level.mainlineScoreRoute
   )) {
     const row = document.createElement("tr")
+    row.id = `${level.setName}-${route.id}`
     if (firstRow) {
       row.appendChild(levelTh)
     }
@@ -155,4 +163,8 @@ function displayRoutesTable(levels) {
   }
 }
 
-updateRoutesTable()
+if (location.hash !== "") {
+  scrollIntoLevelRoute(location.hash.slice(1)).catch(() => updateRoutesTable())
+} else {
+  updateRoutesTable()
+}
