@@ -9,8 +9,8 @@ dependencies:
     specifier: ^10.0.1
     version: 10.0.1
   '@notcc/logic':
-    specifier: ^1.1.0
-    version: 1.1.0
+    specifier: ^1.1.1
+    version: 1.1.1
   '@types/clone':
     specifier: ^2.1.1
     version: 2.1.1
@@ -100,12 +100,12 @@ packages:
       '@jridgewell/sourcemap-codec': 1.4.15
     dev: true
 
-  /@notcc/logic@1.1.0:
-    resolution: {integrity: sha512-tpCHnmfu87nu9tnAxwrei/5lHFUFZS6YKSq5D6NwRottG7c6BVx2xZgHhjx32G48MD0rg7Yh9f+lSv2/G2qceQ==}
+  /@notcc/logic@1.1.1:
+    resolution: {integrity: sha512-Bn+xKH4Nq3soaK8SQ4hcCkrXidC5W8xTU7SIHYHVjNVj9/iIsPzXng6M0fPR+PTeefM8Z12uXCi8mvj0/Pm4xg==}
     dependencies:
       clone: 2.1.2
       fast-printf: 1.6.9
-      protobufjs: 7.2.4
+      protobufjs: 7.2.5
     dev: false
 
   /@protobufjs/aspromise@1.1.2:
@@ -1073,8 +1073,8 @@ packages:
     engines: {node: '>=8.6'}
     dev: true
 
-  /protobufjs@7.2.4:
-    resolution: {integrity: sha512-AT+RJgD2sH8phPmCf7OUZR8xGdcJRga4+1cOaXJ64hvcSkVhNcRHOwIxUatPH15+nj59WAGTDv3LSGZPEQbJaQ==}
+  /protobufjs@7.2.5:
+    resolution: {integrity: sha512-gGXRSXvxQ7UiPgfw8gevrfRWcTlSbOFg+p/N+JVJEK5VhueL2miT6qTymqAmjr1Q5WbOCyJbyrk6JfWKwlFn6A==}
     engines: {node: '>=12.0.0'}
     requiresBuild: true
     dependencies:
