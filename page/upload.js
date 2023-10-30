@@ -121,10 +121,12 @@ function rebuildRoute(upload) {
     validateProgress.max = 1
     validateProgress.value = upload.progress
     metrics.appendChild(validateProgress)
-  } else {
+  } else if (upload.metrics) {
     metrics.appendChild(makeMetricText(upload, "timeLeft", "s"))
     metrics.appendChild(document.createTextNode(" / "))
     metrics.appendChild(makeMetricText(upload, "points", "pts"))
+  } else {
+    metrics.appendChild(document.createTextNode("???"))
   }
   if (upload.errorMsg) {
     if (upload.progress === 0) {
