@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@hapi/boom": "^10.0.1",
-    "@notcc/logic": "^1.1.1",
+    "@notcc/logic": "^1.1.2",
     "@types/clone": "^2.1.1",
     "@types/cors": "^2.8.13",
     "@types/express": "^4.17.17",
