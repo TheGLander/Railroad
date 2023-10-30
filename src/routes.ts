@@ -76,6 +76,7 @@ async function runRoute(
   breathe: (progress: number) => Promise<void>
 ): Promise<void> {
   const ip = new RouteFileInputProvider(route)
+  ip.setupLevel(level)
   level.inputProvider = ip
   const routeLength = ip.moves.length * 3
 
