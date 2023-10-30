@@ -87,6 +87,9 @@ async function runRoute(
     level.tick()
     level.tick()
     level.tick()
+    if (level.currentTick * 3 + level.subtick > routeLength) {
+      break
+    }
     breatheCounter += 1
     if (breatheCounter % BREATHE_INTERVAL === 0) {
       await breathe((level.currentTick * 3 + level.subtick) / routeLength)
