@@ -25,6 +25,8 @@ export async function announceNewRouteSubmissions(
 
   const fields: any[] = []
 
+  let processedSubmissions = 0
+
   for (const level of subLevels) {
     const fieldName = makeLevelName(level)
     let fieldValue = ""
@@ -95,8 +97,19 @@ export async function announceNewRouteSubmissions(
         level.boldScore!
       )}${routeImprovement}](https://glander.club/railroad/#${level.setName!}-${route.id!})`
       fieldValue += lineValue + "\n"
+      processedSubmissions += 1
     }
     fields.push({ name: fieldName, value: fieldValue })
+    if (fields.length === 24 && subLevels.length > 25) break
+  }
+
+  const unprocessedLevels = subLevels.length - fields.length
+
+  if (unprocessedLevels > 0) {
+    fields.push({
+      name: `And ${unprocessedLevels} other levels`,
+      value: `with **${submissions.length - processedSubmissions}** new routes`,
+    })
   }
 
   const embed = {
