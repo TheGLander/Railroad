@@ -12,6 +12,26 @@ function makeLevelName(doc: LevelDoc): string {
   return `${doc.setName!.toUpperCase()} #${doc.levelN!}: ${doc.title!}`
 }
 
+function formatTime(time: number): string {
+  const timeSubticks = Math.floor(time * 60)
+  const subtick = timeSubticks % 3
+  const tick = ((timeSubticks - subtick) / 3) % 20
+  return `${Math.ceil(time)}.${
+    subtick == 0 && tick === 0 ? 100 : (tick * 5).toString().padStart(2, "0")
+  }${["", "⅓", "⅔"][subtick]}`
+}
+
+function formatTimeBoldImprovement(thisTime: number, boldTime: number): string {
+  return (Math.ceil(thisTime) - Math.ceil(boldTime)).toString()
+}
+
+function formatTimeImprovement(time: number): string {
+  const timeSubticks = Math.floor(time * 60)
+  const subtick = timeSubticks % 3
+  const timeClean = (timeSubticks - subtick) / 60
+  return `${timeClean.toFixed(2)}.${["", "⅓", "⅔"][subtick]}`
+}
+
 export async function announceNewRouteSubmissions(
   submissions: RouteSubmission[],
   submittingUser: UserDoc,
@@ -61,9 +81,9 @@ export async function announceNewRouteSubmissions(
         else if (betterThan.length > 1 && level.setName === "cc1") {
           routeType = "mainline"
           const oldRoute = betterThan[0]
-          routeImprovement = `, an improvement of ${
+          routeImprovement = `, an improvement of ${formatTimeImprovement(
             route.timeLeft! - oldRoute.timeLeft!
-          }s`
+          )}s`
         } else {
           const isRouteMainlineScore = level.mainlineScoreRoute?.id === route.id
           const isRouteMainlineTime = level.mainlineTimeRoute?.id === route.id
@@ -75,22 +95,36 @@ export async function announceNewRouteSubmissions(
           // NOTE: This returns funny results when a route targeting one metric is submitted
           // when there's a generic mainline route, such as "an improvement of -2s / 80pts",
           // but I figure that's fine.
-          routeImprovement = `, an improvement of ${
+          routeImprovement = `, an improvement of ${formatTimeImprovement(
             route.timeLeft! - oldRoute.timeLeft!
-          }s / ${route.points! - oldRoute.points!}pts`
+          )}s / ${route.points! - oldRoute.points!}pts`
         }
       }
-      function writeMetric(suffix: string, thisVal: number, boldVal: number) {
-        return thisVal < boldVal
-          ? `${thisVal}${suffix}`
-          : thisVal === boldVal
-          ? `**${thisVal}${suffix} (b)**`
-          : `***${thisVal}${suffix} (b+${thisVal - boldVal})***`
+      function writeMetric(
+        suffix: string,
+        thisVal: number,
+        boldVal: number,
+        format: (val: number) => string = val => val.toString(),
+        formatBoldImprovement: (thisVal: number, boldVal: number) => string = (
+          thisVal,
+          boldVal
+        ) => (thisVal - boldVal).toString()
+      ) {
+        return Math.ceil(thisVal) < Math.ceil(boldVal)
+          ? `${format(thisVal)}${suffix}`
+          : Math.ceil(thisVal) === Math.ceil(boldVal)
+            ? `**${format(thisVal)}${suffix} (b)**`
+            : `***${format(thisVal)}${suffix} (b+${formatBoldImprovement(
+                thisVal,
+                boldVal
+              )})***`
       }
       const lineValue = `• [New **${routeType}** route: ${writeMetric(
         "s",
         route.timeLeft!,
-        level.boldTime!
+        level.boldTime!,
+        formatTime,
+        formatTimeBoldImprovement
       )} / ${writeMetric(
         "pts",
         route.points!,

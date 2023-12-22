@@ -70,7 +70,7 @@ type ServerMessage =
 
 const BREATHE_INTERVAL = 100
 
-async function runRoute(
+export async function runRoute(
   level: LevelState,
   route: RouteFile,
   breathe: (progress: number) => Promise<void>
@@ -209,7 +209,7 @@ class RouteWsServer {
         Math.ceil(level.timeLeft / 60),
         level.bonusPoints
       ),
-      timeLeft: Math.ceil(level.timeLeft / 60),
+      timeLeft: level.timeLeft / 60,
     }
 
     const nowDate = new Date()
