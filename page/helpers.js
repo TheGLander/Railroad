@@ -22,7 +22,7 @@ export function makeMetricText(upload, metricName, metricSuffix) {
   const boldMetric = upload.boldMetrics[metricName]
   let text = `${format(metric)}${metricSuffix}`
   if (Math.ceil(metric) > Math.ceil(boldMetric)) {
-    text += ` (b+${formatBoldImprovement(metric - boldMetric)})`
+    text += ` (b+${formatBoldImprovement(metric, boldMetric)})`
   } else if (Math.ceil(metric) === Math.ceil(boldMetric)) {
     text += ` (b)`
   }
