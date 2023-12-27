@@ -81,8 +81,9 @@ export const levelSchema = new Schema(
             .reverse()
             .reduce<null | RouteSubDoc>(
               (acc, val) =>
-                acc === null ||
-                (val.timeLeft && acc.timeLeft && val.timeLeft > acc.timeLeft)
+                val.routeLabel === "mainline" &&
+                (acc === null ||
+                  (val.timeLeft && acc.timeLeft && val.timeLeft > acc.timeLeft))
                   ? val
                   : acc,
               null
@@ -95,8 +96,9 @@ export const levelSchema = new Schema(
             .reverse()
             .reduce<null | RouteSubDoc>(
               (acc, val) =>
-                acc === null ||
-                (val.points && acc.points && val.points > acc.points)
+                val.routeLabel === "mainline" &&
+                (acc === null ||
+                  (val.points && acc.points && val.points > acc.points))
                   ? val
                   : acc,
               null
