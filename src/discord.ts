@@ -13,7 +13,7 @@ function makeLevelName(doc: LevelDoc): string {
 }
 
 function formatTime(time: number): string {
-  const timeSubticks = Math.floor(time * 60)
+  const timeSubticks = Math.round(time * 60)
   const subtick = timeSubticks % 3
   const tick = ((timeSubticks - subtick) / 3) % 20
   return `${Math.ceil(time)}.${
@@ -26,10 +26,10 @@ function formatTimeBoldImprovement(thisTime: number, boldTime: number): string {
 }
 
 function formatTimeImprovement(time: number): string {
-  const timeSubticks = Math.floor(time * 60)
+  const timeSubticks = Math.round(time * 60)
   const subtick = timeSubticks % 3
   const timeClean = (timeSubticks - subtick) / 60
-  return `${timeClean.toFixed(2)}.${["", "⅓", "⅔"][subtick]}`
+  return `${timeClean.toFixed(2)}${["", "⅓", "⅔"][subtick]}`
 }
 
 export async function announceNewRouteSubmissions(

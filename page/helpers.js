@@ -1,5 +1,5 @@
 function formatTime(time) {
-  const timeSubticks = Math.floor(time * 60)
+  const timeSubticks = Math.round(time * 60)
   const subtick = timeSubticks % 3
   const tick = ((timeSubticks - subtick) / 3) % 20
   return `${Math.ceil(time)}.${
