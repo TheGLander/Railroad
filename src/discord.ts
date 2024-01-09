@@ -150,11 +150,13 @@ export async function announceNewRouteSubmissions(
   }
 
   const embed = {
-    title: "New routes!",
+    title: `New route${submissions.length > 1 ? "s" : ""}!`,
     color: 0xffff00,
     fields,
     author: {
-      name: `Submissions by ${submittingUser.userName!}`,
+      name: `Submission${
+        submissions.length > 1 ? "s" : ""
+      } by ${submittingUser.userName!}`,
     },
     timestamp: new Date().toISOString(),
   }
