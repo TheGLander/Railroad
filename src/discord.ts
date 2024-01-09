@@ -119,17 +119,20 @@ export async function announceNewRouteSubmissions(
                 boldVal
               )})***`
       }
+      const scorePart = ` / ${writeMetric(
+        "pts",
+        route.points!,
+        level.boldScore!
+      )}`
       const lineValue = `• [New **${routeType}** route: ${writeMetric(
         "s",
         route.timeLeft!,
         level.boldTime!,
         formatTime,
         formatTimeBoldImprovement
-      )} / ${writeMetric(
-        "pts",
-        route.points!,
-        level.boldScore!
-      )}${routeImprovement}](https://glander.club/railroad/#${level.setName!}-${route.id!})`
+      )}${
+        level.setName === "cc1" ? "" : scorePart
+      }${routeImprovement}](https://glander.club/railroad/#${level.setName!}-${route.id!})`
       fieldValue += lineValue + "\n"
       processedSubmissions += 1
     }
