@@ -112,6 +112,7 @@ function makeLevelsRows(level) {
 
     if (route.routeLabel === "mainline" && !(isBestTime || isBestScore)) {
       if (firstPastMainline) {
+        firstPastMainline = false
         categoryTd.rowSpan = pastMainlineCount
       } else {
         categoryTd.remove()
