@@ -30,3 +30,12 @@ export function makeMetricText(upload, metricName, metricSuffix) {
   metricEl.innerText = text
   return metricEl
 }
+export function makeMetrics(upload, forCC1) {
+  const el = document.createDocumentFragment()
+  el.appendChild(makeMetricText(upload, "timeLeft", "s"))
+  if (!forCC1) {
+    el.appendChild(document.createTextNode(" / "))
+    el.appendChild(makeMetricText(upload, "points", "pts"))
+  }
+  return el
+}

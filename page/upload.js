@@ -1,4 +1,4 @@
-import { makeMetricText } from "./helpers.js"
+import { makeMetricText, makeMetrics } from "./helpers.js"
 import { getAuthInfo, makeAuthHeader } from "./user.js"
 
 function filePrompt() {
@@ -122,9 +122,9 @@ function rebuildRoute(upload) {
     validateProgress.value = upload.progress
     metrics.appendChild(validateProgress)
   } else if (upload.metrics) {
-    metrics.appendChild(makeMetricText(upload, "timeLeft", "s"))
-    metrics.appendChild(document.createTextNode(" / "))
-    metrics.appendChild(makeMetricText(upload, "points", "pts"))
+    metrics.appendChild(
+      makeMetrics(upload, route.For.Set === "Chips Challenge")
+    )
   } else {
     metrics.appendChild(document.createTextNode("???"))
   }

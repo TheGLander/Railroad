@@ -1,4 +1,4 @@
-import { makeMetricText } from "./helpers.js"
+import { makeMetricText, makeMetrics } from "./helpers.js"
 
 routesListSelector.addEventListener("input", () => {
   updateRoutesTable()
@@ -125,9 +125,7 @@ function makeLevelsRows(level) {
       },
       boldMetrics: { timeLeft: level.boldTime, points: level.boldScore },
     }
-    metricsTd.appendChild(makeMetricText(mockUpload, "timeLeft", "s"))
-    metricsTd.appendChild(document.createTextNode(" / "))
-    metricsTd.appendChild(makeMetricText(mockUpload, "points", "pts"))
+    metricsTd.appendChild(makeMetrics(mockUpload, level.setName === "cc1"))
     row.appendChild(metricsTd)
     const submitterTd = document.createElement("td")
     submitterTd.innerText = route.submitter
