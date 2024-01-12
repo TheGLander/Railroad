@@ -25,11 +25,16 @@ export function makeMetricText(upload, metricName, metricSuffix) {
     text += ` (b+${formatBoldImprovement(metric, boldMetric)})`
   } else if (Math.ceil(metric) === Math.ceil(boldMetric)) {
     text += ` (b)`
+  } else {
+    text += ` (b-${-formatBoldImprovement(metric, boldMetric)})`
   }
-  const metricEl = document.createElement(text.includes("(b") ? "b" : "span")
+  const metricEl = document.createElement(
+    text.includes("(b)") || text.includes("(b+") ? "b" : "span"
+  )
   metricEl.innerText = text
   return metricEl
 }
+
 export function makeMetrics(upload, forCC1) {
   const el = document.createDocumentFragment()
   el.appendChild(makeMetricText(upload, "timeLeft", "s"))

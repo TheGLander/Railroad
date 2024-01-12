@@ -111,7 +111,10 @@ export async function announceNewRouteSubmissions(
         ) => (thisVal - boldVal).toString()
       ) {
         return Math.ceil(thisVal) < Math.ceil(boldVal)
-          ? `${format(thisVal)}${suffix}`
+          ? `${format(thisVal)}${suffix} (b-${formatBoldImprovement(
+              thisVal,
+              boldVal
+            )})`
           : Math.ceil(thisVal) === Math.ceil(boldVal)
             ? `**${format(thisVal)}${suffix} (b)**`
             : `***${format(thisVal)}${suffix} (b+${formatBoldImprovement(
