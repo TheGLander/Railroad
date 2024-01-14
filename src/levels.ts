@@ -1,5 +1,5 @@
 import { LevelDoc, UserDoc, levelSchema } from "./schemata.js"
-import { model } from "mongoose"
+import { Query, model } from "mongoose"
 import { readFile, readdir } from "fs/promises"
 import path from "path"
 import {
@@ -173,13 +173,19 @@ export async function getLevelSet(pack: string): Promise<LevelSet> {
 export const router = Router()
 
 router.get("/packs/:pack", async (req: Request<{ pack: string }>, res) => {
-  const levels = await Level.find({
+  let levelsQuery: Query<LevelDoc[], {}> = Level.find({
     setName: req.params.pack,
   })
     .sort({
       levelN: 1,
     })
     .populate("routes.submitter", "userName")
+
+  if (req.query.noMoves !== undefined) {
+    levelsQuery = levelsQuery.select("-routes.moves")
+  }
+
+  const levels = await levelsQuery
 
   if (levels.length === 0) throw notFound(`Pack "${req.params.pack}" not found`)
   const levelObjs = levels.map(level => {
@@ -190,8 +196,10 @@ router.get("/packs/:pack", async (req: Request<{ pack: string }>, res) => {
     levelObj.mainlineScoreRoute = levelObj.mainlineScoreRoute?.id
     for (const route of levelObj.routes) {
       delete route._id
-      delete route.moves.id
-      delete route.moves._id
+      if (route.moves) {
+        delete route.moves.id
+        delete route.moves._id
+      }
       route.submitter = route.submitter.userName
     }
     return levelObj
@@ -201,3 +209,38 @@ router.get("/packs/:pack", async (req: Request<{ pack: string }>, res) => {
   res.write(stringify(levelObjs))
   res.end()
 })
+
+router.get(
+  "/packs/:pack/:levelN",
+  async (req: Request<{ pack: string; levelN: string }>, res) => {
+    let levelQuery: Query<LevelDoc, {}> = Level.findOne({
+      setName: req.params.pack,
+      levelN: parseInt(req.params.levelN),
+    }).populate("routes.submitter", "userName") as Query<LevelDoc, {}>
+
+    if (req.query.noMoves !== undefined) {
+      levelQuery = levelQuery.select("-routes.moves")
+    }
+
+    const level = await levelQuery
+    if (!level)
+      throw notFound(`Level ${req.params.pack} #${req.params.levelN} not found`)
+    const levelObj: any = level.toJSON({ virtuals: true, versionKey: false })
+    delete levelObj._id
+    delete levelObj.id
+    levelObj.mainlineTimeRoute = levelObj.mainlineTimeRoute?.id
+    levelObj.mainlineScoreRoute = levelObj.mainlineScoreRoute?.id
+    for (const route of levelObj.routes) {
+      delete route._id
+      if (route.moves) {
+        delete route.moves.id
+        delete route.moves._id
+      }
+      route.submitter = route.submitter.userName
+    }
+
+    res.contentType("application/json")
+    res.write(stringify(levelObj))
+    res.end()
+  }
+)

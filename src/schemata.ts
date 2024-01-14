@@ -107,6 +107,8 @@ export const levelSchema = new Schema(
       },
     },
   }
-).index({ setName: 1, levelN: 1 })
+)
+  .index({ setName: 1, levelN: 1 })
+  .index({ setName: 1 })
 
 export type LevelDoc = InferDocType<typeof levelSchema>

@@ -19,7 +19,7 @@ async function updateRoutesTable() {
   routesList.innerText = ""
   routesListTable.classList.toggle("shown", setName !== "")
   if (setName === "") return
-  const res = await fetch(`./packs/${setName}`)
+  const res = await fetch(`./packs/${setName}?noMoves`)
   displayRoutesTable(await res.json())
 }
 
@@ -143,8 +143,14 @@ function makeLevelsRows(level) {
     playTd.appendChild(notccLink)
     playTd.appendChild(document.createElement("br"))
     const downloadButton = document.createElement("button")
-    downloadButton.addEventListener("click", () => {
-      const routeStr = JSON.stringify(route.moves)
+    downloadButton.addEventListener("click", async () => {
+      const fullLevelRoutes = await (
+        await fetch(`./packs/${level.setName}/${level.levelN}`)
+      ).json()
+      const fullRoute = fullLevelRoutes.routes.find(
+        fullRoute => fullRoute.id === route.id
+      )
+      const routeStr = JSON.stringify(fullRoute.moves)
       const routeBin = new TextEncoder().encode(routeStr)
       downloadFile(routeBin, `Railroad-${level.title}.route`)
     })
