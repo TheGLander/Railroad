@@ -14,13 +14,19 @@ async function scrollIntoLevelRoute(id) {
   routeRow.scrollIntoView()
 }
 
+let currentToken = Symbol()
+
 async function updateRoutesTable() {
+  const token = Symbol()
+  currentToken = token
   const setName = routesListSelector.value
   routesList.innerText = ""
   routesListTable.classList.toggle("shown", setName !== "")
   if (setName === "") return
-  const res = await fetch(`./packs/${setName}?noMoves`)
-  displayRoutesTable(await res.json())
+  const res = await (await fetch(`./packs/${setName}?noMoves`)).json()
+  // If `updateRoutesTable` was called while we were fetching stuff, stop this outdated attempt
+  if (token !== currentToken) return
+  displayRoutesTable(res)
 }
 
 function sortRoutes(routes, mainTimeRouteId, mainScoreRouteId) {
