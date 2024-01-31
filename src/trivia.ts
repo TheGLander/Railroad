@@ -8,15 +8,20 @@ export const router = Router()
 
 function bestMainlineRoute(metric: string): AnyExpression {
   return {
-    $max: {
-      $map: {
-        input: {
-          $filter: {
-            input: "$routes",
-            cond: { $eq: ["$$this.routeLabel", "mainline"] },
-          },
+    $reduce: {
+      input: {
+        $filter: {
+          input: "$routes",
+          cond: { $eq: ["$$this.routeLabel", "mainline"] },
         },
-        in: `$$this.${metric}`,
+      },
+      initialValue: null,
+      in: {
+        $cond: [
+          { $gte: [`$$this.${metric}`, `$$value.${metric}`] },
+          "$$this",
+          "$$value",
+        ],
       },
     },
   }
@@ -28,34 +33,93 @@ function boolSum(input: ArrayExpression): AccumulatorOperator {
 router.get("/trivia", async (req, res) => {
   const triviaBySet = await Level.aggregate()
     .project({
-      routesN: { $size: "$routes" },
-      mainlineTime: { $ceil: bestMainlineRoute("timeLeft") },
+      routes: "$routes",
+      mainlineTimeRoute: bestMainlineRoute("timeLeft"),
       boldTime: "$boldTime",
       boldScore: "$boldScore",
-      mainlineScore: bestMainlineRoute("points"),
+      mainlineScoreRoute: bestMainlineRoute("points"),
       setName: "$setName",
     })
     .addFields({
-      isBoldTime: { $eq: ["$mainlineTime", "$boldTime"] },
-      isBoldScore: { $eq: ["$mainlineScore", "$boldScore"] },
-      isBPlusTime: { $gt: ["$mainlineTime", "$boldTime"] },
-      isBPlusScore: { $gt: ["$mainlineScore", "$boldScore"] },
+      isBoldTime: {
+        $eq: [{ $ceil: "$mainlineTimeRoute.timeLeft" }, "$boldTime"],
+      },
+      isBoldScore: { $eq: ["$mainlineScoreRoute.points", "$boldScore"] },
+      isBPlusTime: {
+        $gt: [{ $ceil: "$mainlineTimeRoute.timeLeft" }, "$boldTime"],
+      },
+      isBPlusScore: { $gt: ["$mainlineScoreRoute.points", "$boldScore"] },
+      isMainlineBimetric: {
+        $and: [
+          { $ne: ["$mainlineTimeRoute", null] },
+          {
+            $eq: ["$mainlineScoreRoute._id", "$mainlineTimeRoute._id"],
+          },
+        ],
+      },
+      isRouteless: { $eq: ["$mainlineTimeRoute", null] },
+      outdatedRoutes: {
+        $filter: {
+          input: "$routes",
+          cond: {
+            $and: [
+              { $eq: ["$$this.routeLabel", "mainline"] },
+              { $ne: ["$$this._id", "$mainlineScoreRoute._id"] },
+              { $ne: ["$$this._id", "$mainlineTimeRoute._id"] },
+            ],
+          },
+        },
+      },
+    })
+    .addFields({
+      outdatedRedundantRoutes: {
+        $filter: {
+          input: "$outdatedRoutes",
+          cond: {
+            $anyElementTrue: {
+              $map: {
+                input: "$routes",
+                as: "testedRoute",
+                in: {
+                  $and: [
+                    { $eq: ["$$testedRoute.routeLabel", "mainline"] },
+                    { $ne: ["$$testedRoute._id", "$$this._id"] },
+                    {
+                      $eq: [
+                        { $ceil: "$$this.timeLeft" },
+                        { $ceil: "$$testedRoute.timeLeft" },
+                      ],
+                    },
+                    { $eq: ["$$this.points", "$$testedRoute.points"] },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
     })
     .group({
       _id: "$setName",
-      routesN: { $sum: "$routesN" },
-      totalTime: { $sum: "$mainlineTime" },
-      totalScore: { $sum: "$mainlineScore" },
+      levelsN: { $sum: 1 },
+      routesN: { $sum: { $size: "$routes" } },
+      outdatedRoutes: { $sum: { $size: "$outdatedRoutes" } },
+      outdatedRedundantRoutes: { $sum: { $size: "$outdatedRedundantRoutes" } },
+      totalTime: { $sum: { $ceil: "$mainlineTimeRoute.timeLeft" } },
+      totalScore: { $sum: "$mainlineScoreRoute.points" },
       totalBoldTime: { $sum: "$boldTime" },
       totalBoldScore: { $sum: "$boldScore" },
       boldTimes: boolSum("$isBoldTime"),
       boldScores: boolSum("$isBoldScore"),
       boldPlusTimes: boolSum("$isBPlusTime"),
       boldPlusScores: boolSum("$isBPlusScore"),
+      bimetricRoutes: boolSum("$isMainlineBimetric"),
+      routelessLevels: boolSum("$isRouteless"),
     })
     .sort("_id")
   const userCount = await User.count()
   const totalRoutes = triviaBySet.reduce((acc, val) => acc + val.routesN, 0)
+  res.contentType("application/json")
   res.write(
     stringify({
       userCount,

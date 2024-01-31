@@ -24,10 +24,24 @@ async function getTrivia() {
     if (setTrivia.boldPlusTimes + setTrivia.boldPlusScores > 0) {
       setText += `, and even <b><i>${
         setTrivia.boldPlusTimes + (isCC1 ? 0 : setTrivia.boldPlusScores)
-      }</i></b> routes that are better than bold!`
+      }</i></b> routes that are better than bold! `
     } else {
-      setText += `.`
+      setText += `. `
     }
+
+    if (!isCC1) {
+      setText += `There are <b>${
+        setTrivia.levelsN - setTrivia.bimetricRoutes - setTrivia.routelessLevels
+      }</b> levels with different time and score routes. `
+    }
+
+    setText += `<b>${
+      setTrivia.outdatedRoutes
+    }</b> mainline routes have been replaced. Out of those, <b>${
+      setTrivia.outdatedRedundantRoutes
+    }</b> replacements didn't advance ${
+      isCC1 ? "the total public score" : "public time or score"
+    }.`
 
     setText += ` If one were to execute all public routes, they would have ${metrics(
       setTrivia.totalTime,
@@ -36,6 +50,10 @@ async function getTrivia() {
       setTrivia.totalBoldTime - setTrivia.totalTime,
       setTrivia.totalBoldScore - setTrivia.totalScore
     )} off all bolds! `
+
+    if (setTrivia.routelessLevels > 0) {
+      setText += `There are still <b>${setTrivia.routelessLevels}</b> levels without any routes... Keep going, everyone! `
+    }
 
     setText += "</p>"
     triviaBox.innerHTML += setText
