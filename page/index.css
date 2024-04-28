@@ -1,5 +1,5 @@
 body {
-  --bg-overlay-color: #0008;
+  --bg-overlay-color: #000a;
   background: linear-gradient(var(--bg-overlay-color), var(--bg-overlay-color)),
     url(background.png);
   color: whitesmoke;
