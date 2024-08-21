@@ -1,6 +1,21 @@
 import { prismifyOnPage } from "https://unpkg.com/prismify@1.0.0/prismify.js"
 prismifyOnPage()
 
+const errorHandler = ev => {
+  let error = ev instanceof ErrorEvent ? ev.error : ev.reason
+  let errorString
+  if (error instanceof Error) {
+    errorString = `${error.name}: ${error.message}\nStack: ${error.stack}`
+  } else {
+    errorString = `Unknown error type: ${error}`
+  }
+  alert(
+    `An error has occured! Please report it to G lander on the Discord server!\n${errorString}`
+  )
+}
+window.addEventListener("error", errorHandler)
+window.addEventListener("unhandledrejection", errorHandler)
+
 import "./upload.js"
 import "./routesList.js"
 
