@@ -1,12 +1,19 @@
-function readAuthToken() {
+async function readAuthToken() {
   const authToken = localStorage.getItem("railroad-auth-token")
-  const userName = authToken !== null ? atob(authToken).split(":")[0] : null
-  if (authToken) {
-    document.body.setAttribute("data-logged-in", "")
-    usernameText.textContent = userName
-  } else {
+  if (!authToken) {
     document.body.removeAttribute("data-logged-in")
+    return
   }
+  const usernameRes = await fetch("./users/username", {
+    headers: makeAuthHeader(),
+  })
+  if (!usernameRes.ok) {
+    document.body.removeAttribute("data-logged-in")
+    throw new Error(`Failed to authorize: ${await usernameRes.text()}`)
+  }
+  const userName = (await usernameRes.json()).userName
+  document.body.setAttribute("data-logged-in", "")
+  usernameText.textContent = userName
 }
 
 readAuthToken()
@@ -56,12 +63,12 @@ export function getAuthInfo(
 }
 
 async function readUserProvidedToken(token) {
-  const res = await fetch("./users", {
-    method: "POST",
+  const res = await fetch("./users/username", {
+    method: "GET",
     headers: makeAuthHeader(token),
   })
 
-  if ((await res.text()) !== "Already authorized") {
+  if (!res.ok) {
     alert("Couldn't use this token...")
     return
   }

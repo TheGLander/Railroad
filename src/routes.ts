@@ -9,7 +9,7 @@ import {
 } from "@notcc/logic"
 import { Level, getLevelSet } from "./levels.js"
 import { Request, Router } from "express"
-import { parseAuth } from "./users.js"
+import { getUser, parseAuth } from "./users.js"
 import { badRequest, unauthorized } from "@hapi/boom"
 import { TinyWSRequest } from "tinyws"
 import WebSocket from "ws"
@@ -320,11 +320,7 @@ router.get("/routes", async (req: Request & TinyWSRequest, res) => {
   if (!req.ws) {
     throw badRequest("Use Websockets")
   }
-  const user = await parseAuth(req.headers.authorization)
-  if (!user) {
-    res.setHeader("WWW-Authenticate", "Basic")
-    throw unauthorized("No authorization provided")
-  }
+  const user = await getUser(req, res)
   const ws = await req.ws()
   new RouteWsServer(ws, user)
 })

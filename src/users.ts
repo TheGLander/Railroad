@@ -1,7 +1,7 @@
-import { Router, json } from "express"
+import { Request, Response, Router, json } from "express"
 import { model } from "mongoose"
 import { UserDoc, userSchema } from "./schemata.js"
-import { badRequest } from "@hapi/boom"
+import { badRequest, forbidden, unauthorized } from "@hapi/boom"
 import { randomBytes } from "crypto"
 import { stringify } from "./utils.js"
 import { announceNewUser } from "./discord.js"
@@ -72,4 +72,24 @@ router.post("/users", async (req, res) => {
   res.write(stringify({ userName: user.userName, authId: user.authId }))
   res.end()
   await announceNewUser(user)
+})
+
+export async function getUser(req: Request, res: Response): Promise<UserDoc> {
+  if (!req.headers.authorization) {
+    res.setHeader("WWW-Authenticate", "Basic")
+    throw forbidden("No authorization provided")
+  }
+  const user = await parseAuth(req.headers.authorization)
+  if (!user) {
+    res.setHeader("WWW-Authenticate", "Basic")
+    throw forbidden("Invalid token provided")
+  }
+  return user
+}
+
+router.get("/users/username", async (req, res) => {
+  const user = await getUser(req, res)
+  res.contentType("application/json")
+  res.write(stringify({ userName: user.userName }))
+  res.end()
 })
