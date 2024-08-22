@@ -27,7 +27,7 @@ function makeAuthId() {
   return authId
 }
 
-async function userFromToken(token: string) {
+export async function userFromToken(token: string) {
   const [userName, authId] = Buffer.from(token, "base64")
     .toString("utf-8")
     .split(":")

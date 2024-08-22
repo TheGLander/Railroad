@@ -1,5 +1,5 @@
 import { makeMetricText, makeMetrics } from "./helpers.js"
-import { getAuthInfo, makeAuthHeader } from "./user.js"
+import { getToken } from "./user.js"
 
 function filePrompt() {
   return new Promise((res, rej) => {
@@ -41,26 +41,27 @@ document.body.addEventListener("drop", async ev => {
   }
 })
 
-let ws = null
+let sharedWs = null
+let getWsResolveFuncs = []
 
 function getWs() {
-  if (ws === null || ws.readyState === ws.CLOSED) {
+  if (sharedWs === null || sharedWs.readyState === sharedWs.CLOSED) {
     const url = new URL(location.href)
     url.protocol = location.protocol === "https:" ? "wss:" : "ws:"
     url.hash = ""
     url.pathname += "routes"
-    const authInfo = getAuthInfo()
-    url.username = authInfo.username
-    url.password = authInfo.password
-    ws = new WebSocket(url)
-    ws.addEventListener("message", wsMessageHandler)
-    ws.addEventListener("close", wsCloseHandler)
+    sharedWs = new WebSocket(url)
+    sharedWs.addEventListener("message", wsMessageHandler)
+    sharedWs.addEventListener("close", wsCloseHandler)
     return new Promise((res, rej) => {
-      ws.addEventListener("open", () => res(ws))
-      ws.addEventListener("error", rej)
+      sharedWs.addEventListener("open", () => {
+        getWsResolveFuncs.push(() => res(sharedWs))
+        wsSend(sharedWs, { type: "authentificate", token: getToken() })
+      })
+      sharedWs.addEventListener("error", rej)
     })
   }
-  return Promise.resolve(ws)
+  return Promise.resolve(sharedWs)
 }
 
 function wsSend(ws, msg) {
@@ -72,6 +73,13 @@ const uploadList = uploadZone.querySelector("tbody")
 
 function wsMessageHandler(rawMsg) {
   const msg = JSON.parse(rawMsg.data)
+  if (msg.type === "identity confirmed") {
+    for (const res of getWsResolveFuncs) {
+      res()
+    }
+    getWsResolveFuncs = []
+    return
+  }
   let route = null
   if (msg.routeId) {
     route = uploads.find(upload => upload.routeId === msg.routeId)

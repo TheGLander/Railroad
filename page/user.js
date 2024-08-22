@@ -47,19 +47,16 @@ async function submitUsername() {
   readAuthToken()
 }
 
+export function getToken() {
+  return localStorage.getItem("railroad-auth-token")
+}
+
 export function makeAuthHeader(
   token = localStorage.getItem("railroad-auth-token")
 ) {
   return {
     authorization: `Basic ${token}`,
   }
-}
-
-export function getAuthInfo(
-  token = localStorage.getItem("railroad-auth-token")
-) {
-  const authParts = atob(token).split(":")
-  return { username: authParts[0], password: authParts[1] }
 }
 
 async function readUserProvidedToken(token) {

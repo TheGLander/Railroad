@@ -9,7 +9,7 @@ import {
 } from "@notcc/logic"
 import { Level, getLevelSet } from "./levels.js"
 import { Request, Router } from "express"
-import { getUser, parseAuth } from "./users.js"
+import { getUser, parseAuth, userFromToken } from "./users.js"
 import { badRequest, unauthorized } from "@hapi/boom"
 import { TinyWSRequest } from "tinyws"
 import WebSocket from "ws"
@@ -17,6 +17,11 @@ import { LevelDoc, RouteSchema, RouteSubDoc, UserDoc } from "./schemata.js"
 import { announceNewRouteSubmissions } from "./discord.js"
 
 type ScoreMetrics = Omit<SolutionMetrics, "realTime">
+
+interface ClientAuthentificateMessage {
+  type: "authentificate"
+  token: string
+}
 
 interface ClientAddRouteMessage {
   type: "add route"
@@ -38,6 +43,7 @@ type ClientMessage =
   | ClientAddRouteMessage
   | ClientRemoveRouteMessage
   | ClientSubmitMessage
+  | ClientAuthentificateMessage
 
 interface ServerErrorMessage {
   type: "error"
@@ -62,8 +68,13 @@ interface ServerDoneMessage {
   type: "done"
 }
 
+interface ServerIdentifyConfirmedMessage {
+  type: "identity confirmed"
+}
+
 type ServerMessage =
   | ServerErrorMessage
+  | ServerIdentifyConfirmedMessage
   | ServerProgressMessage
   | ServerLevelReportMessage
   | ServerDoneMessage
@@ -112,10 +123,8 @@ export interface RouteSubmission {
 
 class RouteWsServer {
   submissions: RouteSubmission[] = []
-  constructor(
-    public ws: WebSocket,
-    public user: UserDoc
-  ) {
+  user: UserDoc | null = null
+  constructor(public ws: WebSocket) {
     ws.on("message", msgData => {
       try {
         let msg: ClientMessage
@@ -134,7 +143,14 @@ class RouteWsServer {
     })
   }
   handleClientMessage(msg: ClientMessage) {
-    if (msg.type === "add route") {
+    if (msg.type === "authentificate") {
+      this.authentificateUser(msg)
+    } else if (!this.user) {
+      this.wsSend({
+        type: "error",
+        error: "Must be authentificated to upload routes",
+      })
+    } else if (msg.type === "add route") {
       this.addRoute(msg)
     } else if (msg.type === "remove route") {
       this.removeRoute(msg)
@@ -147,7 +163,17 @@ class RouteWsServer {
   wsSend(msg: ServerMessage) {
     this.ws.send(JSON.stringify(msg))
   }
+  async authentificateUser(msg: ClientAuthentificateMessage) {
+    const user = await userFromToken(msg.token ?? "")
+    if (!user) {
+      this.wsSend({ type: "error", error: "Invalid user token" })
+      return
+    }
+    this.user = user
+    this.wsSend({ type: "identity confirmed" })
+  }
   async addRoute(msg: ClientAddRouteMessage) {
+    if (!this.user) return
     const { route, routeId } = msg
 
     if (this.submissions.some(sub => sub.routeId === routeId)) {
@@ -249,6 +275,7 @@ class RouteWsServer {
     this.submissions.splice(subIndex, 1)
   }
   async submitRoutes(msg: ClientSubmitMessage) {
+    if (!this.user) return
     if (this.submissions.length === 0) {
       this.wsSend({
         type: "error",
@@ -320,7 +347,6 @@ router.get("/routes", async (req: Request & TinyWSRequest, res) => {
   if (!req.ws) {
     throw badRequest("Use Websockets")
   }
-  const user = await getUser(req, res)
   const ws = await req.ws()
-  new RouteWsServer(ws, user)
+  new RouteWsServer(ws)
 })
