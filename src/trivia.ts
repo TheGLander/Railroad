@@ -12,7 +12,7 @@ function bestMainlineRoute(metric: string): AnyExpression {
       input: {
         $filter: {
           input: "$routes",
-          cond: { $eq: ["$$this.routeLabel", "mainline"] },
+          cond: "$$this.isMainline",
         },
       },
       initialValue: null,
@@ -63,7 +63,8 @@ router.get("/trivia", async (req, res) => {
           input: "$routes",
           cond: {
             $and: [
-              { $eq: ["$$this.routeLabel", "mainline"] },
+              "$$this.isMainline",
+              { $eq: ["$$this.routeLabel", ""] },
               { $ne: ["$$this._id", "$mainlineScoreRoute._id"] },
               { $ne: ["$$this._id", "$mainlineTimeRoute._id"] },
             ],
@@ -82,7 +83,7 @@ router.get("/trivia", async (req, res) => {
                 as: "testedRoute",
                 in: {
                   $and: [
-                    { $eq: ["$$testedRoute.routeLabel", "mainline"] },
+                    { $eq: ["$$testedRoute.routeLabel", ""] },
                     { $ne: ["$$testedRoute._id", "$$this._id"] },
                     {
                       $eq: [

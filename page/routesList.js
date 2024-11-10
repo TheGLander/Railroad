@@ -175,9 +175,6 @@ function makeLevelsRows(level) {
 
 function displayRoutesTable(levels) {
   for (const level of levels) {
-    for (const route of level.routes) {
-      if (route.routeLabel === "mainline") route.routeLabel = undefined
-    }
     routesList.appendChild(makeLevelsRows(level))
   }
 }

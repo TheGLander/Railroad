@@ -35,7 +35,6 @@ async function verifyRoute(
   )
   route.glitches = getNonlegalGlitches(level)
   route.isMainline = route.glitches.length === 0
-  if (route.routeLabel === "mainline") delete route.routeLabel
 }
 
 async function verifyLevelRoutes() {
