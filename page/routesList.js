@@ -35,7 +35,8 @@ function sortRoutes(routes, mainTimeRouteId, mainScoreRouteId) {
   }
   return routes
     .sort((a, b) => new Date(a.createdAt) - new Date(b.createAt))
-    .sort(boolSort(r => r.mainline))
+    .sort(boolSort(r => !r.routeLabel))
+    .sort(boolSort(r => r.isMainline))
     .sort(boolSort(r => r.id === mainScoreRouteId))
     .sort(boolSort(r => r.id === mainTimeRouteId))
     .reverse()
@@ -68,10 +69,11 @@ function makeLevelsRows(level) {
   const pastMainlineCount = level.routes.reduce(
     (acc, val) =>
       acc +
-      (val.routeLabel === "mainline" &&
+      (val.isMainline &&
       !(
         val.id === level.mainlineScoreRoute ||
-        val.id === level.mainlineTimeRoute
+        val.id === level.mainlineTimeRoute ||
+        val.routeLabel
       )
         ? 1
         : 0),
@@ -98,25 +100,28 @@ function makeLevelsRows(level) {
     const isBestScore = route.id === level.mainlineScoreRoute
     if (isBestTime || isBestScore) {
       row.classList.add("mainline")
-    } else if (route.routeLabel === "mainline") {
+    } else if (!route.routeLabel) {
       row.classList.add("mainline-old")
     } else {
       row.classList.add("misc")
     }
-    let categoryText = route.routeLabel
+    let categoryText = route.routeLabel ?? "normal"
+    if (!route.isMainline) {
+      categoryText += " (non-mainline)"
+    }
     if (isBestTime && isBestScore) {
     } else if (isBestTime) {
       categoryText += " (best time)"
     } else if (isBestScore) {
       categoryText += " (best score)"
-    } else if (route.routeLabel === "mainline") {
+    } else if (!route.routeLabel) {
       categoryText += " (outdated)"
     }
     const categoryTd = document.createElement("td")
     categoryTd.innerText = categoryText
     row.appendChild(categoryTd)
 
-    if (route.routeLabel === "mainline" && !(isBestTime || isBestScore)) {
+    if (!route.routeLabel && !(isBestTime || isBestScore)) {
       if (firstPastMainline) {
         firstPastMainline = false
         categoryTd.rowSpan = pastMainlineCount
@@ -170,6 +175,9 @@ function makeLevelsRows(level) {
 
 function displayRoutesTable(levels) {
   for (const level of levels) {
+    for (const route of level.routes) {
+      if (route.routeLabel === "mainline") route.routeLabel = undefined
+    }
     routesList.appendChild(makeLevelsRows(level))
   }
 }

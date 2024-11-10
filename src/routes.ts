@@ -6,6 +6,7 @@ import {
   createLevelFromData,
   Route as RouteFile,
   RouteFileInputProvider,
+  protobuf,
 } from "@notcc/logic"
 import { Level, getLevelSet } from "./levels.js"
 import { Request, Router } from "express"
@@ -62,6 +63,7 @@ interface ServerLevelReportMessage {
   routeId: string
   metrics: ScoreMetrics
   boldMetrics: ScoreMetrics
+  glitches: string[]
 }
 
 interface ServerDoneMessage {
@@ -80,6 +82,23 @@ type ServerMessage =
   | ServerDoneMessage
 
 const BREATHE_INTERVAL = 100
+
+const KnownGlitches = protobuf.GlitchInfo.KnownGlitches
+
+const NONLEGAL_GLITCHES: Partial<
+  Record<protobuf.GlitchInfo.KnownGlitches, string>
+> = {
+  [KnownGlitches.SIMULTANEOUS_CHARACTER_MOVEMENT]:
+    "Simultaneous character movement",
+  [KnownGlitches.DYNAMITE_EXPLOSION_SNEAKING]: "Dynamite explosion sneaking",
+}
+
+export function getNonlegalGlitches(level: LevelState): string[] {
+  return level.glitches
+    .filter(glitch => glitch.glitchKind! in NONLEGAL_GLITCHES)
+    .map(glitch => NONLEGAL_GLITCHES[glitch.glitchKind!]!)
+    .filter((val, i, arr) => arr.indexOf(val) === i)
+}
 
 export async function runRoute(
   level: LevelState,
@@ -120,6 +139,9 @@ export interface RouteSubmission {
   routeId: string
   route: RouteSchema
 }
+export type RouteSubmissionPostFactum =
+  | Omit<RouteSubmission, "route">
+  | { route: RouteSubDoc }
 
 class RouteWsServer {
   submissions: RouteSubmission[] = []
@@ -228,6 +250,7 @@ class RouteWsServer {
       })
       return
     }
+    const glitches = getNonlegalGlitches(level)
 
     const metrics: ScoreMetrics = {
       points: calculateLevelPoints(
@@ -247,6 +270,8 @@ class RouteWsServer {
       absoluteTime: (level.currentTick * 3 + level.subtick) / 60,
       submitter: this.user.id,
       createdAt: nowDate,
+      glitches,
+      isMainline: glitches.length === 0,
     }
 
     this.submissions.push({ route: routeDoc, routeId, level: levelDoc })
@@ -259,6 +284,7 @@ class RouteWsServer {
         timeLeft: levelDoc.boldTime!,
         points: levelDoc.boldScore!,
       },
+      glitches,
     })
   }
   removeRoute(msg: ClientRemoveRouteMessage) {
@@ -284,45 +310,48 @@ class RouteWsServer {
       return
     }
     let issuesRaised = false
-    const mainlineSubmissionsBetterThan: Map<RouteSubmission, RouteSubDoc[]> =
-      new Map()
+    const routeBetterThan: Map<RouteSubmission, RouteSubDoc[]> = new Map()
     for (const sub of this.submissions) {
-      const label = msg.categories[sub.routeId]
-      if (!label) {
-        this.wsSend({
-          type: "error",
-          routeId: sub.routeId,
-          error: "Submission wasn't given a label",
-        })
-        issuesRaised = true
+      let label: string | undefined = msg.categories[sub.routeId]
+      if (label.trim() === "") {
+        label = undefined
       }
-      if (label === "mainline") {
-        const mainlineTimeRoute = sub.level.mainlineTimeRoute
-        const mainlineScoreRoute = sub.level.mainlineScoreRoute
-        const betterThanTime =
-          !mainlineTimeRoute ||
-          mainlineTimeRoute.timeLeft! <= sub.route.timeLeft!
-        const betterThanScore =
-          !mainlineScoreRoute || mainlineScoreRoute.points! <= sub.route.points!
+      const mainlineTimeRoute = sub.level.mainlineTimeRoute
+      const mainlineScoreRoute = sub.level.mainlineScoreRoute
+      const betterThanTime =
+        !mainlineTimeRoute || mainlineTimeRoute.timeLeft! <= sub.route.timeLeft!
+      const betterThanScore =
+        !mainlineScoreRoute || mainlineScoreRoute.points! <= sub.route.points!
 
+      // Routes without a label should be better than the mainline route and not have glitches
+      if (!label) {
+        if (!sub.route.isMainline) {
+          this.wsSend({
+            type: "error",
+            routeId: sub.routeId,
+            error: "Submissions with non-legal glitches must have a label.",
+          })
+          issuesRaised = true
+          continue
+        }
         if (!betterThanTime && !betterThanScore) {
           this.wsSend({
             type: "error",
             routeId: sub.routeId,
             error:
-              "Submission tagged as mainline, but a better mainline route already exists. If your route showcases an alternate solution, tag it as non-mainline. If you think the current mainline solution should be tagged as non-mainline, raise the issue on the Discord server.",
+              "Submission was not given a label, but a better route already exists. If your route showcases an alternate solution, give it a label describing what's different about it.",
           })
           issuesRaised = true
           continue
         }
-        mainlineSubmissionsBetterThan.set(
-          sub,
-          [
-            betterThanTime ? mainlineTimeRoute : null,
-            betterThanScore ? mainlineScoreRoute : null,
-          ].filter((route): route is RouteSubDoc => route !== null)
-        )
       }
+      routeBetterThan.set(
+        sub,
+        [
+          betterThanTime ? mainlineTimeRoute : null,
+          betterThanScore ? mainlineScoreRoute : null,
+        ].filter((route): route is RouteSubDoc => route !== null)
+      )
       sub.route.routeLabel = label
     }
     if (issuesRaised) return
@@ -333,10 +362,9 @@ class RouteWsServer {
     await announceNewRouteSubmissions(
       this.submissions,
       this.user,
-      mainlineSubmissionsBetterThan
+      routeBetterThan
     )
     this.wsSend({ type: "done" })
-    this.submissions = []
   }
 }
 

@@ -1,5 +1,5 @@
 import { RouteSubmission } from "./routes.js"
-import { LevelDoc, RouteSubDoc, UserDoc } from "./schemata.js"
+import { LevelDoc, RouteSchema, RouteSubDoc, UserDoc } from "./schemata.js"
 
 function getDiscordSubmissionWebhookUrls() {
   return process.env.DISCORD_SUBMISSIONS_WEBHOOK_URLS?.split(" ") ?? []
@@ -25,11 +25,95 @@ function formatTimeBoldImprovement(thisTime: number, boldTime: number): string {
   return (Math.ceil(thisTime) - Math.ceil(boldTime)).toString()
 }
 
+function writeMetric(
+  suffix: string,
+  thisVal: number,
+  boldVal: number,
+  format: (val: number) => string = val => val.toString(),
+  formatBoldImprovement: (thisVal: number, boldVal: number) => string = (
+    thisVal,
+    boldVal
+  ) => (thisVal - boldVal).toString()
+) {
+  return Math.ceil(thisVal) < Math.ceil(boldVal)
+    ? `${format(thisVal)}${suffix} (b-${-formatBoldImprovement(
+        thisVal,
+        boldVal
+      )})`
+    : Math.ceil(thisVal) === Math.ceil(boldVal)
+      ? `**${format(thisVal)}${suffix} (b)**`
+      : `***${format(thisVal)}${suffix} (b+${formatBoldImprovement(
+          thisVal,
+          boldVal
+        )})***`
+}
+
 function formatTimeImprovement(time: number): string {
   const timeSubticks = Math.round(time * 60)
   const subtick = timeSubticks % 3
   const timeClean = (timeSubticks - subtick) / 60
   return `${timeClean.toFixed(2)}${["", "⅓", "⅔"][subtick]}`
+}
+
+function formatSubmission(
+  level: LevelDoc,
+  sub: RouteSubmission,
+  betterThan: RouteSubDoc[]
+): string | null {
+  // Find the route *document*, not just the schema, since we need to know
+  // the dynamically-generated id. Don't think there's a less stupid way of
+  // doing this, since `bulkSave` doesn't give subdoc IDs, as far as I can tell.
+  const route = sub.level.routes.find(
+    route =>
+      route.createdAt === sub.route.createdAt &&
+      route.routeLabel === sub.route.routeLabel &&
+      route.timeLeft === sub.route.timeLeft &&
+      route.points === sub.route.points
+  )
+  if (!route) {
+    return null
+  }
+  // Which metrics the route should be reported as being good as, `null` means all metrics
+  let routeMetrics: string | null
+  let routeImprovement = ""
+  const isRouteMainlineScore = level.mainlineScoreRoute?.id === route.id
+  const isRouteMainlineTime = level.mainlineTimeRoute?.id === route.id
+  if (level.setName === "cc1") {
+    routeMetrics = null
+    const oldRoute = betterThan[0]
+    if (oldRoute) {
+      routeImprovement = `, an improvement of ${formatTimeImprovement(
+        route.timeLeft! - oldRoute.timeLeft!
+      )}s`
+    }
+  } else if (betterThan.length === 2) {
+    // This route is better than both old time/score metrics, just display the all text without giving an improvement
+    routeMetrics = null
+  } else {
+    const oldRoute = betterThan[0]
+    routeMetrics =
+      isRouteMainlineScore && isRouteMainlineTime
+        ? null
+        : `mainline ${isRouteMainlineScore ? "score" : "time"}`
+    // NOTE: This returns funny results when a route targeting one metric is submitted
+    // when there's a generic mainline route, such as "an improvement of -2s / 80pts",
+    // but I figure that's fine.
+    if (oldRoute) {
+      routeImprovement = `, an improvement of ${formatTimeImprovement(
+        route.timeLeft! - oldRoute.timeLeft!
+      )}s / ${route.points! - oldRoute.points!}pts`
+    }
+  }
+  const scorePart = ` / ${writeMetric("pts", route.points!, level.boldScore!)}`
+  return `• [New **${route.routeLabel ? `"${route.routeLabel}" ` : ""}${route.isMainline ? "mainline" : "__non-mainline__"}${routeMetrics ? ` ${routeMetrics}` : ""}** route: ${writeMetric(
+    "s",
+    route.timeLeft!,
+    level.boldTime!,
+    formatTime,
+    formatTimeBoldImprovement
+  )}${
+    level.setName === "cc1" ? "" : scorePart
+  }${routeImprovement}](https://glander.club/railroad/#${level.setName!}-${route.id!})`
 }
 
 export async function announceNewRouteSubmissions(
@@ -49,96 +133,14 @@ export async function announceNewRouteSubmissions(
 
   for (const level of subLevels) {
     const fieldName = makeLevelName(level)
-    let fieldValue = ""
     const subs = submissions.filter(sub => sub.level.id === level.id)
-    for (const sub of subs) {
-      // Find the route *document*, not just the schema, since we need to know
-      // the dynamically-generated id. Don't think there's a less stupid way of
-      // doing this, since `bulkSave` doesn't give subdoc IDs, as far as I can tell.
-      const route = sub.level.routes.find(
-        route =>
-          route.createdAt === sub.route.createdAt &&
-          route.routeLabel === sub.route.routeLabel &&
-          route.timeLeft === sub.route.timeLeft &&
-          route.points === sub.route.points
+    processedSubmissions += subs.length
+    const fieldValue = subs
+      .map(sub =>
+        formatSubmission(level, sub, mainlineSubmissionsBetterThan.get(sub)!)
       )
-      if (!route) {
-        return
-      }
-      let routeType: string
-      let routeImprovement = ""
-      if (route.routeLabel !== "mainline") {
-        routeType = `"${route.routeLabel}"`
-      } else {
-        const betterThan = mainlineSubmissionsBetterThan.get(sub)!
-        // If this route is better than both existing mainlines, or if there were
-        // no mainlines before this one, use generic "new mainline" wording
-        if (betterThan.length === 0) {
-          routeType = "mainline"
-        }
-        // If we only have one metric (CC1 Steam), we can only compare against one route,
-        // and can generate an improvement string without thinking about it too hard, hurray
-        else if (betterThan.length > 1 && level.setName === "cc1") {
-          routeType = "mainline"
-          const oldRoute = betterThan[0]
-          routeImprovement = `, an improvement of ${formatTimeImprovement(
-            route.timeLeft! - oldRoute.timeLeft!
-          )}s`
-        } else {
-          const isRouteMainlineScore = level.mainlineScoreRoute?.id === route.id
-          const isRouteMainlineTime = level.mainlineTimeRoute?.id === route.id
-          const oldRoute = betterThan[0]
-          routeType =
-            isRouteMainlineScore && isRouteMainlineTime
-              ? "mainline"
-              : `mainline ${isRouteMainlineScore ? "score" : "time"}`
-          // NOTE: This returns funny results when a route targeting one metric is submitted
-          // when there's a generic mainline route, such as "an improvement of -2s / 80pts",
-          // but I figure that's fine.
-          routeImprovement = `, an improvement of ${formatTimeImprovement(
-            route.timeLeft! - oldRoute.timeLeft!
-          )}s / ${route.points! - oldRoute.points!}pts`
-        }
-      }
-      function writeMetric(
-        suffix: string,
-        thisVal: number,
-        boldVal: number,
-        format: (val: number) => string = val => val.toString(),
-        formatBoldImprovement: (thisVal: number, boldVal: number) => string = (
-          thisVal,
-          boldVal
-        ) => (thisVal - boldVal).toString()
-      ) {
-        return Math.ceil(thisVal) < Math.ceil(boldVal)
-          ? `${format(thisVal)}${suffix} (b-${-formatBoldImprovement(
-              thisVal,
-              boldVal
-            )})`
-          : Math.ceil(thisVal) === Math.ceil(boldVal)
-            ? `**${format(thisVal)}${suffix} (b)**`
-            : `***${format(thisVal)}${suffix} (b+${formatBoldImprovement(
-                thisVal,
-                boldVal
-              )})***`
-      }
-      const scorePart = ` / ${writeMetric(
-        "pts",
-        route.points!,
-        level.boldScore!
-      )}`
-      const lineValue = `• [New **${routeType}** route: ${writeMetric(
-        "s",
-        route.timeLeft!,
-        level.boldTime!,
-        formatTime,
-        formatTimeBoldImprovement
-      )}${
-        level.setName === "cc1" ? "" : scorePart
-      }${routeImprovement}](https://glander.club/railroad/#${level.setName!}-${route.id!})`
-      fieldValue += lineValue + "\n"
-      processedSubmissions += 1
-    }
+      .join("\n")
+
     fields.push({ name: fieldName, value: fieldValue })
     if (fields.length === 24 && subLevels.length > 25) break
   }

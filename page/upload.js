@@ -98,8 +98,11 @@ function wsMessageHandler(rawMsg) {
     route.progress = 1
     route.metrics = msg.metrics
     route.boldMetrics = msg.boldMetrics
+    route.glitches = msg.glitches
   } else if (msg.type === "done") {
     uploads.length = 0
+    submitRoutesButton.disabled = true
+
     alert("Done!")
   }
   rebuildRoutes()
@@ -123,18 +126,22 @@ function rebuildRoute(upload) {
   row.appendChild(levelName)
 
   const metrics = document.createElement("td")
+  const glitches = document.createElement("td")
   if (upload.progress < 1) {
     const validateProgress = document.createElement("progress")
     validateProgress.min = 0
     validateProgress.max = 1
     validateProgress.value = upload.progress
     metrics.appendChild(validateProgress)
+    glitches.innerText = "Verifying..."
   } else if (upload.metrics) {
     metrics.appendChild(
       makeMetrics(upload, route.For.Set === "Chips Challenge")
     )
+    glitches.innerText = upload.glitches.join(", ") || "None"
   } else {
     metrics.appendChild(document.createTextNode("???"))
+    glitches.innerText = "???"
   }
   if (upload.errorMsg) {
     if (upload.progress === 0) {
@@ -145,29 +152,17 @@ function rebuildRoute(upload) {
     metrics.appendChild(errDiv)
   }
   row.appendChild(metrics)
+  row.appendChild(glitches)
 
   const category = document.createElement("td")
 
   const categoryInput = document.createElement("input")
   categoryInput.value = upload.category
-  categoryInput.disabled = upload.mainline
   categoryInput.addEventListener("input", () => {
     upload.category = categoryInput.value
   })
 
-  const mainlineLabel = document.createElement("label")
-  mainlineLabel.innerText = "Mainline?"
-
-  const mainlineTick = document.createElement("input")
-  mainlineTick.type = "checkbox"
-  mainlineTick.checked = upload.mainline
-  mainlineTick.addEventListener("input", () => {
-    upload.mainline = mainlineTick.checked
-    categoryInput.disabled = upload.mainline
-  })
-  mainlineLabel.appendChild(mainlineTick)
-
-  category.appendChild(mainlineLabel)
+  category.appendChild(categoryInput)
   category.appendChild(document.createElement("br"))
   category.appendChild(categoryInput)
   row.appendChild(category)
@@ -194,9 +189,7 @@ function rebuildRoutes() {
     rebuildRoute(upload)
   }
   moreRoutesText.classList.toggle("shown", uploadList.children.length > 1)
-  submitRoutesButton.disabled = !uploads.every(
-    upload => upload.progress === 1 && !upload.errorMsg
-  )
+  submitRoutesButton.disabled = !uploads.every(upload => upload.progress === 1)
 }
 
 let routeN = 0
@@ -211,7 +204,6 @@ async function uploadRoute(route) {
     routeId,
     route,
     progress: 0,
-    mainline: true,
     category: "",
   })
   rebuildRoutes()
@@ -224,7 +216,7 @@ async function submitRoutes() {
   const ws = await getWs()
   const categories = {}
   for (const upload of uploads) {
-    categories[upload.routeId] = upload.mainline ? "mainline" : upload.category
+    categories[upload.routeId] = upload.category
   }
   wsSend(ws, { type: "submit", categories })
 }

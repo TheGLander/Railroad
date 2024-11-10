@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import * as dotenv from "dotenv"
 dotenv.config()
 
@@ -11,7 +12,7 @@ import {
   calculateLevelPoints,
   createLevelFromData,
 } from "@notcc/logic"
-import { runRoute } from "./routes.js"
+import { getNonlegalGlitches, runRoute } from "./routes.js"
 
 async function refreshBolds() {
   await connect(process.env.MONGODB_LINK!)
@@ -32,6 +33,9 @@ async function verifyRoute(
     Math.ceil(level.timeLeft / 60),
     level.bonusPoints
   )
+  route.glitches = getNonlegalGlitches(level)
+  route.isMainline = route.glitches.length === 0
+  if (route.routeLabel === "mainline") delete route.routeLabel
 }
 
 async function verifyLevelRoutes() {

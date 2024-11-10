@@ -58,10 +58,26 @@ export const routeSchema = new Schema({
   routeLabel: String,
   submitter: ref("User"),
   createdAt: Date,
+  isMainline: Boolean,
+  glitches: [String],
 })
 
 export type RouteSubDoc = InferSubdocType<typeof routeSchema>
 export type RouteSchema = InferSchemaType<typeof routeSchema>
+
+function getMainlineTimeRoute(level: LevelDoc): RouteSubDoc | null {
+  return Array.from(level.routes)
+    .reverse()
+    .reduce<null | RouteSubDoc>(
+      (acc, val) =>
+        val.isMainline &&
+        (acc === null ||
+          (val.timeLeft && acc.timeLeft && val.timeLeft > acc.timeLeft))
+          ? val
+          : acc,
+      null
+    )
+}
 
 export const levelSchema = new Schema(
   {
@@ -76,33 +92,27 @@ export const levelSchema = new Schema(
   {
     virtuals: {
       mainlineTimeRoute: {
-        get() {
-          return Array.from(this.routes)
-            .reverse()
-            .reduce<null | RouteSubDoc>(
-              (acc, val) =>
-                val.routeLabel === "mainline" &&
-                (acc === null ||
-                  (val.timeLeft && acc.timeLeft && val.timeLeft > acc.timeLeft))
-                  ? val
-                  : acc,
-              null
-            )
+        get(): RouteSubDoc | null {
+          return getMainlineTimeRoute(this as LevelDoc)
         },
       },
       mainlineScoreRoute: {
         get() {
-          return Array.from(this.routes)
+          const scoreRoute = Array.from(this.routes)
             .reverse()
             .reduce<null | RouteSubDoc>(
               (acc, val) =>
-                val.routeLabel === "mainline" &&
+                val.isMainline &&
                 (acc === null ||
                   (val.points && acc.points && val.points > acc.points))
                   ? val
                   : acc,
               null
             )
+          // If the mainline time route is just as good, just return that to minimize time/score splits
+          const timeRoute = getMainlineTimeRoute(this as LevelDoc)
+          if (timeRoute?.points === scoreRoute?.points) return timeRoute
+          return scoreRoute
         },
       },
     },
