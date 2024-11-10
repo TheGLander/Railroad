@@ -63,8 +63,7 @@ router.get("/trivia", async (req, res) => {
           input: "$routes",
           cond: {
             $and: [
-              "$$this.isMainline",
-              { $eq: ["$$this.routeLabel", ""] },
+              { $eq: [{ $type: ["$$this.routeLabel"] }, "missing"] },
               { $ne: ["$$this._id", "$mainlineScoreRoute._id"] },
               { $ne: ["$$this._id", "$mainlineTimeRoute._id"] },
             ],
@@ -83,7 +82,7 @@ router.get("/trivia", async (req, res) => {
                 as: "testedRoute",
                 in: {
                   $and: [
-                    { $eq: ["$$testedRoute.routeLabel", ""] },
+                    { $eq: [{ $type: ["$$this.routeLabel"] }, "missing"] },
                     { $ne: ["$$testedRoute._id", "$$this._id"] },
                     {
                       $eq: [
