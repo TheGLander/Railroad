@@ -73,6 +73,15 @@ function formatSubmission(
         route.timeLeft! - oldTimeRoute.timeLeft!
       )}s`
     }
+  } else if (
+    isRouteMainlineTime &&
+    isRouteMainlineScore &&
+    oldTimeRoute &&
+    oldTimeRoute._id!.equals(oldScoreRoute!._id!)
+  ) {
+    // If this is a bimetric improvement on a bimetric previous route, we can give an improvement
+    routeMetrics = null
+    routeImprovement = `, an improvement of ${formatTimeImprovement(route.timeLeft! - oldTimeRoute.timeLeft!)}s / ${route.points! - oldTimeRoute.points!}pts`
   } else if (isRouteMainlineTime === isRouteMainlineScore) {
     // This route is either better than both old time/score metrics, or not better than anything,
     // so we don't have any improvement or metric to show
