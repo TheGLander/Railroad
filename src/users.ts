@@ -5,10 +5,34 @@ import { badRequest, forbidden, unauthorized } from "@hapi/boom"
 import { randomBytes } from "crypto"
 import { stringify } from "./utils.js"
 import { announceNewUser } from "./discord.js"
+import { argon2id, hash, verify } from "argon2"
+
+// Argon2 parameters in the env are in the form of "[parallelism] [memoryExp] [timeCost]"
+function getArgon2HashParams() {
+  const paramsArr = process.env.ARGON2_PARAMETERS?.split(" ")
+  if (!paramsArr || paramsArr.length !== 3)
+    throw new Error("Invalid argon2 parameters supplied! This is VERY bad!!")
+  const params = {
+    parallelism: parseInt(paramsArr[0]),
+    memoryCost: 2 ** parseInt(paramsArr[1]),
+    timeCost: parseInt(paramsArr[2]),
+  }
+  if (
+    isNaN(params.timeCost) ||
+    isNaN(params.memoryCost) ||
+    isNaN(params.parallelism)
+  )
+    throw new Error("Argon2 parameters aren't numbers!")
+  return params
+}
+
+export function assertArgon2Ready() {
+  void getArgon2HashParams()
+}
 
 export const User = model("User", userSchema)
 
-const AUTH_ID_LENGTH = 4
+const AUTH_ID_LENGTH = 16
 
 function makeAuthId() {
   const authBytes = randomBytes(AUTH_ID_LENGTH * 2)
@@ -31,7 +55,13 @@ export async function userFromToken(token: string) {
   const [userName, authId] = Buffer.from(token, "base64")
     .toString("utf-8")
     .split(":")
-  const user = await User.findOne({ userName, authId })
+  const user = await User.findOne({ userName })
+  if (!user || !user.hash) return null
+  const passwordMatches = await verify(user.hash, authId)
+  if (!passwordMatches) {
+    console.log(`Incorrect authId login for ${userName}`)
+    return null
+  }
   return user
 }
 
@@ -64,12 +94,17 @@ router.post("/users", async (req, res) => {
     )
   }
 
-  const user = new User({ userName, authId: makeAuthId(), admin: false })
+  const authId = makeAuthId()
+
+  const hashParams = getArgon2HashParams()
+  const userHash = await hash(authId, { ...hashParams, type: argon2id })
+
+  const user = new User({ userName, hash: userHash, admin: false })
 
   await user.save()
 
   res.contentType("application/json")
-  res.write(stringify({ userName: user.userName, authId: user.authId }))
+  res.write(stringify({ userName, authId }))
   res.end()
   await announceNewUser(user)
 })

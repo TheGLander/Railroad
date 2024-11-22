@@ -8,10 +8,12 @@ import "express-async-errors"
 import { connect } from "mongoose"
 import { router as levelRouter, updateLevelModel } from "./levels.js"
 import { router as boldRouter } from "./bolds.js"
-import { router as userRouter } from "./users.js"
+import { User, assertArgon2Ready, router as userRouter } from "./users.js"
 import { router as routesRouter } from "./routes.js"
 import { router as triviaRouter } from "./trivia.js"
 import { tinyws } from "tinyws"
+
+assertArgon2Ready()
 
 const app = express()
 

@@ -34,7 +34,7 @@ type InferSubdocType<TSchema> = Types.Subdocument<Types.ObjectId> &
 
 export const userSchema = new Schema({
   userName: String,
-  authId: String,
+  hash: String,
   admin: Boolean,
 })
 
