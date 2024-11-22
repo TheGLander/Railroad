@@ -6,6 +6,7 @@ import {
   Schema,
   Types,
 } from "mongoose"
+import { extraTicksFromCeilTime } from "./utils.js"
 
 function ref(refModel: string) {
   return { type: Types.ObjectId, ref: refModel }
@@ -65,18 +66,37 @@ export const routeSchema = new Schema({
 export type RouteSubDoc = InferSubdocType<typeof routeSchema>
 export type RouteSchema = InferSchemaType<typeof routeSchema>
 
-function getMainlineTimeRoute(level: LevelDoc): RouteSubDoc | null {
-  return Array.from(level.routes)
-    .reverse()
-    .reduce<null | RouteSubDoc>(
-      (acc, val) =>
-        val.isMainline &&
-        (acc === null ||
-          (val.timeLeft && acc.timeLeft && val.timeLeft > acc.timeLeft))
-          ? val
-          : acc,
-      null
-    )
+export function findMainlineRoute(
+  level: LevelDoc,
+  comparator: (a: RouteSubDoc, b: RouteSubDoc) => number,
+  exclude: RouteSubDoc[]
+): RouteSubDoc | null {
+  return Array.from(level.routes).reduce<null | RouteSubDoc>((acc, val) => {
+    if (!val.isMainline) return acc
+    if (exclude.some(exRoute => exRoute._id!.equals(val._id!))) return acc
+    if (!acc) return val
+    if (comparator(val, acc) < 0) return acc
+    if (comparator(val, acc) > 0) return val
+    // Prefer the route with the better decimal
+    if (extraTicksComparator(val, acc) < 0) return acc
+    if (extraTicksComparator(val, acc) > 0) return val
+    // I guess prefer the more recent route?
+    return val
+  }, null)
+}
+
+export function timeComparator(a: RouteSubDoc, b: RouteSubDoc) {
+  return a.timeLeft! - b.timeLeft!
+}
+
+export function scoreComparator(a: RouteSubDoc, b: RouteSubDoc) {
+  return a.points! - b.points!
+}
+
+export function extraTicksComparator(a: RouteSubDoc, b: RouteSubDoc) {
+  return (
+    extraTicksFromCeilTime(a.timeLeft!) - extraTicksFromCeilTime(b.timeLeft!)
+  )
 }
 
 export const levelSchema = new Schema(
@@ -87,32 +107,19 @@ export const levelSchema = new Schema(
     levelN: Number,
     boldTime: Number,
     boldScore: Number,
+    disallowedTime: Number,
+    disallowedScore: Number,
   },
-  // This is a huge mess :)
   {
     virtuals: {
       mainlineTimeRoute: {
         get(): RouteSubDoc | null {
-          return getMainlineTimeRoute(this as LevelDoc)
+          return findMainlineRoute(this as LevelDoc, timeComparator, [])
         },
       },
       mainlineScoreRoute: {
-        get() {
-          const scoreRoute = Array.from(this.routes)
-            .reverse()
-            .reduce<null | RouteSubDoc>(
-              (acc, val) =>
-                val.isMainline &&
-                (acc === null ||
-                  (val.points && acc.points && val.points > acc.points))
-                  ? val
-                  : acc,
-              null
-            )
-          // If the mainline time route is just as good, just return that to minimize time/score splits
-          const timeRoute = getMainlineTimeRoute(this as LevelDoc)
-          if (timeRoute?.points === scoreRoute?.points) return timeRoute
-          return scoreRoute
+        get(): RouteSubDoc | null {
+          return findMainlineRoute(this as LevelDoc, scoreComparator, [])
         },
       },
     },

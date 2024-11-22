@@ -1,5 +1,15 @@
+import { Level } from "./levels.js"
 import { RouteSubmission } from "./routes.js"
-import { LevelDoc, RouteSchema, RouteSubDoc, UserDoc } from "./schemata.js"
+import {
+  LevelDoc,
+  RouteSchema,
+  RouteSubDoc,
+  UserDoc,
+  findMainlineRoute,
+  scoreComparator,
+  timeComparator,
+} from "./schemata.js"
+import { formatTime, formatTimeImprovement } from "./utils.js"
 
 function getDiscordSubmissionWebhookUrls() {
   return process.env.DISCORD_SUBMISSIONS_WEBHOOK_URLS?.split(" ") ?? []
@@ -10,15 +20,6 @@ function getDiscordNewUserWebhookUrls() {
 
 function makeLevelName(doc: LevelDoc): string {
   return `${doc.setName!.toUpperCase()} #${doc.levelN!}: ${doc.title!}`
-}
-
-function formatTime(time: number): string {
-  const timeSubticks = Math.round(time * 60)
-  const subtick = timeSubticks % 3
-  const tick = ((timeSubticks - subtick) / 3) % 20
-  return `${Math.ceil(time)}.${
-    subtick == 0 && tick === 0 ? 100 : (tick * 5).toString().padStart(2, "0")
-  }${["", "⅓", "⅔"][subtick]}`
 }
 
 function formatTimeBoldImprovement(thisTime: number, boldTime: number): string {
@@ -48,53 +49,37 @@ function writeMetric(
         )})***`
 }
 
-function formatTimeImprovement(time: number): string {
-  const timeSubticks = Math.round(time * 60)
-  const subtick = timeSubticks % 3
-  const timeClean = (timeSubticks - subtick) / 60
-  return `${timeClean.toFixed(2)}${["", "⅓", "⅔"][subtick]}`
-}
-
 function formatSubmission(
   level: LevelDoc,
-  sub: RouteSubmission,
-  betterThan: RouteSubDoc[]
+  route: RouteSubDoc,
+  // Need to know all routes in this submission to know which old route we should be comparing
+  // ourselves against
+  allRoutes: RouteSubDoc[]
 ): string | null {
-  // Find the route *document*, not just the schema, since we need to know
-  // the dynamically-generated id. Don't think there's a less stupid way of
-  // doing this, since `bulkSave` doesn't give subdoc IDs, as far as I can tell.
-  const route = sub.level.routes.find(
-    route =>
-      route.createdAt === sub.route.createdAt &&
-      route.routeLabel === sub.route.routeLabel &&
-      route.timeLeft === sub.route.timeLeft &&
-      route.points === sub.route.points
-  )
-  if (!route) {
-    return null
-  }
   // Which metrics the route should be reported as being good as, `null` means all metrics
   let routeMetrics: string | null
   let routeImprovement = ""
-  const isRouteMainlineScore = level.mainlineScoreRoute?.id === route.id
+
   const isRouteMainlineTime = level.mainlineTimeRoute?.id === route.id
+  const oldTimeRoute = findMainlineRoute(level, timeComparator, allRoutes)
+
+  const isRouteMainlineScore = level.mainlineScoreRoute?.id === route.id
+  const oldScoreRoute = findMainlineRoute(level, scoreComparator, allRoutes)
+
   if (level.setName === "cc1") {
     routeMetrics = null
-    const oldRoute = betterThan[0]
-    if (oldRoute) {
+    if (oldTimeRoute) {
       routeImprovement = `, an improvement of ${formatTimeImprovement(
-        route.timeLeft! - oldRoute.timeLeft!
+        route.timeLeft! - oldTimeRoute.timeLeft!
       )}s`
     }
-  } else if (betterThan.length === 2) {
-    // This route is better than both old time/score metrics, just display the all text without giving an improvement
+  } else if (isRouteMainlineTime === isRouteMainlineScore) {
+    // This route is either better than both old time/score metrics, or not better than anything,
+    // so we don't have any improvement or metric to show
     routeMetrics = null
   } else {
-    const oldRoute = betterThan[0]
-    routeMetrics =
-      isRouteMainlineScore && isRouteMainlineTime
-        ? null
-        : `mainline ${isRouteMainlineScore ? "score" : "time"}`
+    const oldRoute = isRouteMainlineScore ? oldScoreRoute : oldTimeRoute
+    routeMetrics = isRouteMainlineScore ? "score" : "time"
     // NOTE: This returns funny results when a route targeting one metric is submitted
     // when there's a generic mainline route, such as "an improvement of -2s / 80pts",
     // but I figure that's fine.
@@ -116,29 +101,62 @@ function formatSubmission(
   }${routeImprovement}](https://glander.club/railroad/#${level.setName!}-${route.id!})`
 }
 
+function findRouteDocs(
+  subs: RouteSubmission[]
+): Map<RouteSubmission, RouteSubDoc> {
+  const res = new Map<RouteSubmission, RouteSubDoc>()
+  for (const sub of subs) {
+    const doc = sub.level.routes.find(
+      route =>
+        route.createdAt === sub.route.createdAt &&
+        route.routeLabel === sub.route.routeLabel &&
+        route.timeLeft === sub.route.timeLeft &&
+        route.points === sub.route.points
+    )
+    if (!doc)
+      throw new Error("Failed to find a document right after creating it??")
+
+    res.set(sub, doc)
+  }
+  return res
+}
+
 export async function announceNewRouteSubmissions(
   submissions: RouteSubmission[],
-  submittingUser: UserDoc,
-  mainlineSubmissionsBetterThan: Map<RouteSubmission, RouteSubDoc[]>
+  submittingUser: UserDoc
 ): Promise<void> {
-  const subLevels = submissions
-    .map(sub => sub.level)
-    .filter((lvl, i, arr) => arr.findIndex(flvl => flvl.id === lvl.id) === i)
-    .sort((a, b) => (a.levelN ?? 0) - (b.levelN ?? 0))
-    .sort((a, b) => a.setName!.localeCompare(b.setName!))
+  const subLevels = await Promise.all(
+    submissions
+      .map(sub => sub.level)
+      // Unique levels only
+      .filter((lvl, i, arr) => arr.findIndex(flvl => flvl.id === lvl.id) === i)
+      .sort((a, b) => (a.levelN ?? 0) - (b.levelN ?? 0))
+      .sort((a, b) => a.setName!.localeCompare(b.setName!))
+      // Have to refetch because if there were two routes for the same level,
+      // we'd only grab one copy of the level document, which will contain all old
+      // routes *and* our current route, excluding the other routes uploaded this
+      // submission
+      .map<Promise<LevelDoc | null>>(lvl => Level.findOne({ _id: lvl._id }))
+  )
+
+  // Find the route *documents*, not just the schema(ta), since we need to know
+  // the dynamically-generated ids. Don't think there's a less stupid way of
+  // doing this, since `bulkSave` doesn't give subdoc IDs, as far as I can tell.
+  // (wow I love MongoDB so much)
+  const routeDocMap = findRouteDocs(submissions)
+  const allRoutes = Array.from(routeDocMap.values())
 
   const fields: any[] = []
 
   let processedSubmissions = 0
 
   for (const level of subLevels) {
+    if (!level) continue
     const fieldName = makeLevelName(level)
     const subs = submissions.filter(sub => sub.level.id === level.id)
     processedSubmissions += subs.length
     const fieldValue = subs
-      .map(sub =>
-        formatSubmission(level, sub, mainlineSubmissionsBetterThan.get(sub)!)
-      )
+      .map(sub => formatSubmission(level, routeDocMap.get(sub)!, allRoutes))
       .join("\n")
 
     fields.push({ name: fieldName, value: fieldValue })

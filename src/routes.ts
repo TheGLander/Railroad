@@ -16,6 +16,7 @@ import { TinyWSRequest } from "tinyws"
 import WebSocket from "ws"
 import { LevelDoc, RouteSchema, RouteSubDoc, UserDoc } from "./schemata.js"
 import { announceNewRouteSubmissions } from "./discord.js"
+import { formatTime } from "./utils.js"
 
 type ScoreMetrics = Omit<SolutionMetrics, "realTime">
 
@@ -49,6 +50,7 @@ type ClientMessage =
 interface ServerErrorMessage {
   type: "error"
   routeId?: string
+  invalidatesRoute?: boolean
   error: string
 }
 
@@ -211,6 +213,7 @@ class RouteWsServer {
         type: "error",
         routeId,
         error: "Couldn't find level for route",
+        invalidatesRoute: true,
       })
     }
     const routeFor = route.For
@@ -247,6 +250,7 @@ class RouteWsServer {
         type: "error",
         routeId,
         error: "Route doesn't win the level",
+        invalidatesRoute: true,
       })
       return
     }
@@ -259,6 +263,26 @@ class RouteWsServer {
         level.bonusPoints
       ),
       timeLeft: level.timeLeft / 60,
+    }
+    const disallowedScore =
+      levelDoc.disallowedScore && metrics.points >= levelDoc.disallowedScore
+    const disallowedTime =
+      levelDoc.disallowedTime && metrics.timeLeft >= levelDoc.disallowedTime
+
+    if (disallowedScore || disallowedTime) {
+      const disallowedMetric = disallowedScore
+        ? `${levelDoc.disallowedScore}pts`
+        : `${formatTime(levelDoc.disallowedTime!)}s`
+      const thisMetric = disallowedScore
+        ? `${metrics.points}pts`
+        : `${formatTime(metrics.timeLeft)}s`
+      this.wsSend({
+        type: "error",
+        routeId,
+        error: `This route has a ${disallowedScore ? "score" : "time"} of ${thisMetric}, which is equal to or higher than ${disallowedMetric}. This limit is in place to preserve the competition of the game. If you believe this route should be public, ask about it in #optimization in the Chip's Challege Bit Busters Club Discord Server`,
+        invalidatesRoute: true,
+      })
+      return
     }
 
     const nowDate = new Date()
@@ -310,10 +334,9 @@ class RouteWsServer {
       return
     }
     let issuesRaised = false
-    const routeBetterThan: Map<RouteSubmission, RouteSubDoc[]> = new Map()
     for (const sub of this.submissions) {
       let label: string | undefined = msg.categories[sub.routeId]
-      if (label.trim() === "") {
+      if (!label || label.trim() === "") {
         label = undefined
       }
       const mainlineTimeRoute = sub.level.mainlineTimeRoute
@@ -345,13 +368,6 @@ class RouteWsServer {
           continue
         }
       }
-      routeBetterThan.set(
-        sub,
-        [
-          betterThanTime ? mainlineTimeRoute : null,
-          betterThanScore ? mainlineScoreRoute : null,
-        ].filter((route): route is RouteSubDoc => route !== null)
-      )
       sub.route.routeLabel = label
     }
     if (issuesRaised) return
@@ -359,11 +375,7 @@ class RouteWsServer {
       sub.level.routes.push(sub.route)
     }
     await Level.bulkSave(this.submissions.map(sub => sub.level))
-    await announceNewRouteSubmissions(
-      this.submissions,
-      this.user,
-      routeBetterThan
-    )
+    await announceNewRouteSubmissions(this.submissions, this.user)
     this.wsSend({ type: "done" })
   }
 }

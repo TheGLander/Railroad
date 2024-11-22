@@ -87,6 +87,7 @@ function wsMessageHandler(rawMsg) {
   if (msg.type === "error") {
     if (route) {
       route.errorMsg = msg.error
+      if (msg.invalidatesRoute) route.invalid = true
     } else {
       alert(`Server error!\n${msg.error}`)
     }
@@ -116,6 +117,15 @@ function wsCloseHandler() {
   }
 }
 
+async function removeUpload(upload) {
+  // Invalid routes are automatically deleted by the server, so don't ask it to remove it
+  if (!upload.invalid) {
+    wsSend(await getWs(), { type: "remove route", routeId: upload.routeId })
+  }
+  uploads.splice(uploads.indexOf(upload), 1)
+  rebuildRoutes()
+}
+
 function rebuildRoute(upload) {
   const route = upload.route
   const row = document.createElement("tr")
@@ -127,7 +137,9 @@ function rebuildRoute(upload) {
 
   const metrics = document.createElement("td")
   const glitches = document.createElement("td")
-  if (upload.progress < 1) {
+  if (upload.invalid) {
+    metrics.appendChild(document.createTextNode("Invalid"))
+  } else if (upload.progress < 1) {
     const validateProgress = document.createElement("progress")
     validateProgress.min = 0
     validateProgress.max = 1
@@ -163,16 +175,13 @@ function rebuildRoute(upload) {
   })
 
   category.appendChild(categoryInput)
-  category.appendChild(document.createElement("br"))
   category.appendChild(categoryInput)
   row.appendChild(category)
 
   const rmButton = document.createElement("button")
   rmButton.innerText = "❌"
   rmButton.addEventListener("click", async () => {
-    wsSend(await getWs(), { type: "remove route", routeId: upload.routeId })
-    uploads.splice(uploads.indexOf(upload), 1)
-    rebuildRoutes()
+    removeUpload(upload)
   })
   const rmCell = document.createElement("td")
   rmCell.appendChild(rmButton)
@@ -189,13 +198,21 @@ function rebuildRoutes() {
     rebuildRoute(upload)
   }
   moreRoutesText.classList.toggle("shown", uploadList.children.length > 1)
-  submitRoutesButton.disabled = !uploads.every(upload => upload.progress === 1)
+  submitRoutesButton.disabled = uploads.some(
+    upload => !upload.invalid && upload.progress !== 1
+  )
 }
 
 let routeN = 0
 
 async function uploadRoute(route) {
   if (!document.body.hasAttribute("data-logged-in")) return
+  if (!route.For) {
+    alert(
+      "This route doesn't have a `For` key and cannot be automatically identified."
+    )
+    return
+  }
   const ws = await getWs()
   const routeId = routeN.toString()
   routeN += 1
@@ -216,6 +233,10 @@ async function submitRoutes() {
   const ws = await getWs()
   const categories = {}
   for (const upload of uploads) {
+    if (upload.invalid) {
+      alert("Can't submit invalid routes! Remove them before submitting")
+      return
+    }
     categories[upload.routeId] = upload.category
   }
   wsSend(ws, { type: "submit", categories })
