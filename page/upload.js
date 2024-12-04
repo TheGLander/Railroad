@@ -157,7 +157,7 @@ function rebuildRoute(upload) {
   }
   if (upload.errorMsg) {
     if (upload.progress === 0) {
-      metrics.children[0].remove()
+      metrics.childNodes[0].remove()
     }
     const errDiv = document.createElement("div")
     errDiv.innerText = `ERROR! ${upload.errorMsg}`

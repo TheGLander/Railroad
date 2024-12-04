@@ -208,22 +208,29 @@ class RouteWsServer {
       return
     }
 
-    const sendLvlFindErr = () => {
+    const sendLvlFindErr = (err: string) => {
       this.wsSend({
         type: "error",
         routeId,
-        error: "Couldn't find level for route",
+        error: `Couldn't find level for route: ${err}`,
         invalidatesRoute: true,
       })
     }
     const routeFor = route.For
+    if (!routeFor) {
+      sendLvlFindErr(
+        "Route lacks `For` field. Routes uploaded to Railroad should be exported from ExaCC with the appropriate level set open."
+      )
+    }
     if (!routeFor?.Set || !routeFor?.LevelNumber) {
-      sendLvlFindErr()
+      sendLvlFindErr(
+        "Route lacks `For.Set`/`For.LevelNumber` fields. This may happen if you opened a level in ExaCC instead of the set."
+      )
       return
     }
     const packName = scriptNameToPackName[routeFor.Set]
     if (!packName) {
-      sendLvlFindErr()
+      sendLvlFindErr(`Unknown set "${routeFor.Set}"`)
       return
     }
 
@@ -235,7 +242,7 @@ class RouteWsServer {
     const levelData = (await levelSet.goToLevel(routeFor.LevelNumber))
       ?.levelData
     if (!levelData || !levelDoc) {
-      sendLvlFindErr()
+      sendLvlFindErr(`Failed to find level`)
       return
     }
 
